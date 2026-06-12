@@ -1,4 +1,5 @@
-import { db, runMigration } from './db'
+import { firedb } from './firebase'
+import { collection, doc, getDocs, getDoc, addDoc, setDoc, deleteDoc, query, where } from 'firebase/firestore'
 import { encrypt, decrypt, generateSalt, toBase64, fromBase64 } from './crypto'
 
 let _passphrase = null
@@ -7,25 +8,29 @@ export function setPassphrase(p) { _passphrase = p }
 export function getPassphrase() { return _passphrase }
 export function isUnlocked() { return !!_passphrase }
 
+const metaRef = () => collection(firedb, 'meta')
+const metaDoc = (key) => doc(firedb, 'meta', key)
+
 async function getSalt() {
-  const meta = await db.meta.get('salt')
-  return fromBase64(meta.value)
+  const snap = await getDoc(metaDoc('salt'))
+  return fromBase64(snap.data().value)
 }
 
 const INDEXED_FIELDS = {
-  applications: ['id', 'status', 'dateApplied', 'tags', 'company'],
-  resumes: ['id', 'name'],
-  prepGuides: ['id', 'applicationId'],
-  interviewRounds: ['id', 'applicationId', 'date'],
-  retrospectives: ['id', 'roundId', 'applicationId'],
+  applications: ['status', 'dateApplied', 'tags', 'company'],
+  resumes: ['name', 'category'],
+  prepGuides: ['applicationId'],
+  interviewRounds: ['applicationId', 'date'],
+  retrospectives: ['roundId', 'applicationId'],
 }
 
 async function encryptRecord(table, record) {
   const salt = await getSalt()
-  const indexed = INDEXED_FIELDS[table] || ['id']
+  const indexed = INDEXED_FIELDS[table] || []
   const sensitive = {}
   const result = {}
   for (const [k, v] of Object.entries(record)) {
+    if (k === 'id') continue
     if (indexed.includes(k)) result[k] = v
     else sensitive[k] = v
   }
@@ -33,97 +38,104 @@ async function encryptRecord(table, record) {
   return result
 }
 
-async function decryptRecord(record) {
-  if (!record || !record._encrypted) return record
+async function decryptRecord(id, data) {
+  if (!data || !data._encrypted) return { id, ...data }
   const salt = await getSalt()
-  const decrypted = JSON.parse(await decrypt(record._encrypted, _passphrase, salt))
-  const { _encrypted, ...rest } = record
-  return { ...rest, ...decrypted }
+  const decrypted = JSON.parse(await decrypt(data._encrypted, _passphrase, salt))
+  const { _encrypted, ...rest } = data
+  return { id, ...rest, ...decrypted }
 }
 
 export const store = {
   async setupPassphrase(passphrase) {
     const salt = generateSalt()
     const verifyToken = await encrypt('jobhunt-verify', passphrase, salt)
-    await db.meta.put({ key: 'salt', value: toBase64(salt) })
-    await db.meta.put({ key: 'verify', value: JSON.stringify(verifyToken) })
-    await db.meta.put({ key: 'migrated_v2', value: 'true' })
+    await setDoc(metaDoc('salt'), { value: toBase64(salt) })
+    await setDoc(metaDoc('verify'), { value: JSON.stringify(verifyToken) })
     _passphrase = passphrase
   },
 
   async verifyPassphrase(passphrase) {
-    const saltMeta = await db.meta.get('salt')
-    if (!saltMeta) return false
-    const salt = fromBase64(saltMeta.value)
-    const verifyMeta = await db.meta.get('verify')
+    const saltSnap = await getDoc(metaDoc('salt'))
+    if (!saltSnap.exists()) return false
+    const salt = fromBase64(saltSnap.data().value)
+    const verifySnap = await getDoc(metaDoc('verify'))
     try {
-      const result = await decrypt(JSON.parse(verifyMeta.value), passphrase, salt)
-      if (result === 'jobhunt-verify') {
-        _passphrase = passphrase
-        await runMigration(passphrase)
-        return true
-      }
+      const result = await decrypt(JSON.parse(verifySnap.data().value), passphrase, salt)
+      if (result === 'jobhunt-verify') { _passphrase = passphrase; return true }
       return false
     } catch { return false }
   },
 
   async isSetup() {
-    return !!(await db.meta.get('salt'))
+    const snap = await getDoc(metaDoc('salt'))
+    return snap.exists()
   },
 
   async add(table, record) {
     const encrypted = await encryptRecord(table, record)
-    return db[table].add(encrypted)
+    const ref = await addDoc(collection(firedb, table), encrypted)
+    return ref.id
   },
 
   async put(table, record) {
-    const encrypted = await encryptRecord(table, record)
-    return db[table].put(encrypted)
+    const { id, ...rest } = record
+    const encrypted = await encryptRecord(table, rest)
+    await setDoc(doc(firedb, table, String(id)), encrypted)
   },
 
   async get(table, id) {
-    const record = await db[table].get(id)
-    return decryptRecord(record)
+    const snap = await getDoc(doc(firedb, table, String(id)))
+    if (!snap.exists()) return null
+    return decryptRecord(snap.id, snap.data())
   },
 
   async getAll(table) {
-    const records = await db[table].toArray()
-    return Promise.all(records.map(decryptRecord))
+    const snap = await getDocs(collection(firedb, table))
+    return Promise.all(snap.docs.map(d => decryptRecord(d.id, d.data())))
   },
 
   async query(table, indexName, value) {
-    const records = await db[table].where(indexName).equals(value).toArray()
-    return Promise.all(records.map(decryptRecord))
+    const q = query(collection(firedb, table), where(indexName, '==', value))
+    const snap = await getDocs(q)
+    return Promise.all(snap.docs.map(d => decryptRecord(d.id, d.data())))
   },
 
   async delete(table, id) {
-    return db[table].delete(id)
+    await deleteDoc(doc(firedb, table, String(id)))
   },
 
   async exportAll() {
-    const salt = await getSalt()
-    const verify = await db.meta.get('verify')
+    const saltSnap = await getDoc(metaDoc('salt'))
+    const verifySnap = await getDoc(metaDoc('verify'))
     const data = {}
     for (const table of ['applications', 'resumes', 'prepGuides', 'interviewRounds', 'retrospectives']) {
-      data[table] = await db[table].toArray()
+      const snap = await getDocs(collection(firedb, table))
+      data[table] = snap.docs.map(d => ({ id: d.id, ...d.data() }))
     }
-    return JSON.stringify({ salt: toBase64(salt), verify: verify.value, data })
+    return JSON.stringify({ salt: saltSnap.data().value, verify: verifySnap.data().value, data })
   },
 
   async importAll(json) {
     const { salt, verify, data } = JSON.parse(json)
-    await db.meta.put({ key: 'salt', value: salt })
-    if (verify) await db.meta.put({ key: 'verify', value: verify })
-    await db.meta.put({ key: 'migrated_v2', value: 'true' })
+    await setDoc(metaDoc('salt'), { value: salt })
+    if (verify) await setDoc(metaDoc('verify'), { value: verify })
     for (const [table, records] of Object.entries(data)) {
-      await db[table].clear()
-      if (records.length) await db[table].bulkAdd(records)
+      // Clear existing
+      const existing = await getDocs(collection(firedb, table))
+      await Promise.all(existing.docs.map(d => deleteDoc(d.ref)))
+      // Add new
+      for (const r of records) {
+        const { id, ...rest } = r
+        await setDoc(doc(firedb, table, id || crypto.randomUUID()), rest)
+      }
     }
   },
 
   async clearAll() {
     for (const table of ['applications', 'resumes', 'prepGuides', 'interviewRounds', 'retrospectives', 'meta']) {
-      await db[table].clear()
+      const snap = await getDocs(collection(firedb, table))
+      await Promise.all(snap.docs.map(d => deleteDoc(d.ref)))
     }
     _passphrase = null
   }

@@ -37,6 +37,7 @@ export default function ApplicationDrawer({ id, onClose, onSaved }) {
   const [section, setSection] = useState('all')
   const [resumeFile, setResumeFile] = useState(null)
   const [resumeName, setResumeName] = useState('')
+  const [resumeCategory, setResumeCategory] = useState('General')
   const fileRef = useRef()
 
   useEffect(() => {
@@ -73,10 +74,10 @@ export default function ApplicationDrawer({ id, onClose, onSaved }) {
     if (!resumeFile || !resumeName.trim()) return
     const reader = new FileReader()
     reader.onload = async () => {
-      const newResume = { name: resumeName.trim(), fileName: resumeFile.name, type: resumeFile.type, data: reader.result, linkedApps: id !== 'new' ? [id] : [], createdAt: new Date().toISOString() }
+      const newResume = { name: resumeName.trim(), category: resumeCategory, fileName: resumeFile.name, type: resumeFile.type, data: reader.result, linkedApps: id !== 'new' ? [id] : [], createdAt: new Date().toISOString() }
       await store.add('resumes', newResume)
       setResumes(await store.getAll('resumes'))
-      setResumeFile(null); setResumeName('')
+      setResumeFile(null); setResumeName(''); setResumeCategory('General')
     }
     reader.readAsDataURL(resumeFile)
   }
@@ -231,7 +232,7 @@ export default function ApplicationDrawer({ id, onClose, onSaved }) {
               {linkedResumes.length > 0 && <div className="space-y-1.5 mb-2">
                 {linkedResumes.map(r => (
                   <div key={r.id} className="flex items-center gap-2 rounded-lg p-2" style={{ backgroundColor: 'rgba(99,102,241,0.06)' }}>
-                    <span className="text-accent text-sm">📄</span>
+                    <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${r.category === 'Tailored' ? 'bg-purple-50 text-purple-700' : 'bg-sky-50 text-sky-700'}`}>{r.category === 'Tailored' ? '🎯' : '📋'}</span>
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-medium truncate">{r.name}</p>
                       <p className="text-[10px] text-muted">{r.fileName}</p>
@@ -257,6 +258,10 @@ export default function ApplicationDrawer({ id, onClose, onSaved }) {
               <div className="bg-bg-secondary rounded-lg p-3 space-y-2">
                 <p className="text-[10px] text-muted font-medium uppercase tracking-wide">Upload New Resume</p>
                 <input placeholder="Version name (e.g. SDE-v2-AWS)" value={resumeName} onChange={e => setResumeName(e.target.value)} />
+                <div className="flex gap-1.5">
+                  <button type="button" onClick={() => setResumeCategory('General')} className={`flex-1 text-[10px] py-1 rounded-md border ${resumeCategory === 'General' ? 'bg-sky-50 text-sky-700 border-sky-200 font-semibold' : 'bg-transparent text-muted border-border'}`}>📋 General</button>
+                  <button type="button" onClick={() => setResumeCategory('Tailored')} className={`flex-1 text-[10px] py-1 rounded-md border ${resumeCategory === 'Tailored' ? 'bg-purple-50 text-purple-700 border-purple-200 font-semibold' : 'bg-transparent text-muted border-border'}`}>🎯 Tailored</button>
+                </div>
                 <div className="flex gap-2">
                   <button type="button" onClick={() => fileRef.current?.click()} className="flex-1 text-[11px] border-dashed border-border">
                     {resumeFile ? `📎 ${resumeFile.name}` : '📁 Choose file (PDF/DOCX)'}

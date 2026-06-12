@@ -6,18 +6,19 @@ import ApplicationDrawer from './ApplicationDrawer'
 import { format, differenceInDays } from 'date-fns'
 
 const STATUS_COLORS = {
-  'Applied': '#3b82f6', 'HR Called': '#06b6d4', 'Screening Done': '#14b8a6',
+  'Wishlist': '#94a3b8', 'Applied': '#3b82f6',
+  'Recruiter Screen Scheduled': '#06b6d4', 'Recruiter Screen Done': '#14b8a6',
   'Interview Scheduled': '#6366f1', 'Interview In Progress': '#a855f7',
-  'Offer Received': '#10b981', 'Accepted': '#22c55e',
+  'Offer': '#10b981', 'Offer Negotiation': '#f59e0b', 'Accepted': '#22c55e',
   'Rejected': '#ef4444', 'Withdrawn': '#64748b', 'Ghosted': '#f97316',
 }
 
 // Group statuses into pipeline stages for the kanban
 const STAGES = [
-  { id: 'applied', label: '📨 Applied', statuses: ['Applied'] },
-  { id: 'screening', label: '📞 HR/Screen', statuses: ['HR Called', 'Screening Done'] },
+  { id: 'early', label: '📨 Applied', statuses: ['Wishlist', 'Applied'] },
+  { id: 'screening', label: '📞 Screening', statuses: ['Recruiter Screen Scheduled', 'Recruiter Screen Done'] },
   { id: 'interviewing', label: '🎯 Interviews', statuses: ['Interview Scheduled', 'Interview In Progress'] },
-  { id: 'offer', label: '🎉 Offer', statuses: ['Offer Received', 'Accepted'] },
+  { id: 'offer', label: '🎉 Offer', statuses: ['Offer', 'Offer Negotiation', 'Accepted'] },
   { id: 'closed', label: '📁 Closed', statuses: ['Rejected', 'Withdrawn', 'Ghosted'] },
 ]
 

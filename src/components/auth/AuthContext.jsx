@@ -9,17 +9,22 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     (async () => {
-      const isSetup = await store.isSetup()
-      if (!isSetup) { setState('setup'); return }
+      try {
+        const isSetup = await store.isSetup()
+        if (!isSetup) { setState('setup'); return }
 
-      // Try restoring session
-      const cached = sessionStorage.getItem('_kp')
-      if (cached) {
-        const ok = await store.verifyPassphrase(cached)
-        if (ok) { setPassphrase(cached); setState('unlocked'); return }
-        sessionStorage.removeItem('_kp')
+        // Try restoring session
+        const cached = sessionStorage.getItem('_kp')
+        if (cached) {
+          const ok = await store.verifyPassphrase(cached)
+          if (ok) { setPassphrase(cached); setState('unlocked'); return }
+          sessionStorage.removeItem('_kp')
+        }
+        setState('locked')
+      } catch (e) {
+        console.error('Auth init failed:', e)
+        setState('setup')
       }
-      setState('locked')
     })()
   }, [])
 

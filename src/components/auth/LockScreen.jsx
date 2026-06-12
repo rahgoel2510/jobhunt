@@ -6,7 +6,20 @@ export default function LockScreen() {
   const [pass, setPass] = useState('')
   const [confirm, setConfirm] = useState('')
 
-  if (state === 'loading') return <div className="lock-screen"><p className="text-muted">Loading...</p></div>
+  if (state === 'loading') return (
+    <div className="lock-screen">
+      <div className="flex flex-col items-center gap-4">
+        <div className="relative w-12 h-12">
+          <div className="absolute inset-0 rounded-full border-[3px] border-border" />
+          <div className="absolute inset-0 rounded-full border-[3px] border-transparent border-t-accent animate-spin" />
+        </div>
+        <div className="text-center">
+          <p className="text-sm font-medium">Connecting vault...</p>
+          <p className="text-[10px] text-muted mt-1">Securely loading your encrypted data</p>
+        </div>
+      </div>
+    </div>
+  )
 
   const isSetup = state === 'setup'
 
@@ -32,11 +45,11 @@ export default function LockScreen() {
         <form onSubmit={handleSubmit} className="flex flex-col gap-3">
           <div>
             <label htmlFor="passphrase">Passphrase</label>
-            <input id="passphrase" type="password" value={pass} onChange={e => setPass(e.target.value)} autoFocus />
+            <input id="passphrase" type="password" value={pass} onChange={e => setPass(e.target.value)} autoFocus autoComplete="off" />
           </div>
           {isSetup && <div>
             <label htmlFor="confirm">Confirm Passphrase</label>
-            <input id="confirm" type="password" value={confirm} onChange={e => setConfirm(e.target.value)} />
+            <input id="confirm" type="password" value={confirm} onChange={e => setConfirm(e.target.value)} autoComplete="off" />
             {pass && confirm && pass !== confirm && <p className="text-danger text-[11px] mt-1">Passphrases don't match</p>}
           </div>}
           {error && <p className="text-danger text-[11px]">{error}</p>}

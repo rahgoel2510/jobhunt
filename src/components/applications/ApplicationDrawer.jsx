@@ -3,6 +3,7 @@ import { store } from '../../lib/store'
 import { exportApplicationPDF } from '../../lib/pdf'
 import { STATUSES, SOURCES } from '../../lib/constants'
 import { format } from 'date-fns'
+import CompanyLogo from '../shared/CompanyLogo'
 
 const STATUS_COLORS = {
   'Wishlist': ['#6b7280', '#f3f4f6'],
@@ -117,11 +118,14 @@ export default function ApplicationDrawer({ id, onClose, onSaved }) {
         {/* ─── Header ─── */}
         <div className="shrink-0 px-5 pt-5 pb-4 border-b border-border">
           <div className="flex items-start justify-between">
-            <div>
-              <p className="text-[10px] uppercase tracking-widest text-muted font-medium mb-1">{id === 'new' ? 'New Application' : 'Edit Application'}</p>
-              <h2 className="text-base font-bold leading-tight">
-                {form.company || 'Company'} <span className="text-muted font-normal">· {form.role || 'Role'}</span>
-              </h2>
+            <div className="flex items-center gap-3">
+              <CompanyLogo company={form.company} size={40} />
+              <div>
+                <p className="text-[10px] uppercase tracking-widest text-muted font-medium mb-0.5">{id === 'new' ? 'New Application' : 'Edit Application'}</p>
+                <h2 className="text-base font-bold leading-tight">
+                  {form.company || 'Company'} <span className="text-muted font-normal">· {form.role || 'Role'}</span>
+                </h2>
+              </div>
             </div>
             <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-full border-0 bg-bg-secondary hover:bg-border text-muted text-sm">✕</button>
           </div>

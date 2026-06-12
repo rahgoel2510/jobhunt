@@ -3,6 +3,7 @@ import { store } from '../../lib/store'
 import { STATUSES } from '../../lib/constants'
 import { format } from 'date-fns'
 import ApplicationDrawer from './ApplicationDrawer'
+import CompanyLogo from '../shared/CompanyLogo'
 
 const STATUS_COLORS = {
   'Wishlist': 'bg-gray-100 text-gray-700',
@@ -59,7 +60,7 @@ export default function Applications() {
           <tbody>
             {filtered.map(a => (
               <tr key={a.id} onClick={() => setDrawerId(a.id)}>
-                <td className="font-medium">{a.company}</td>
+                <td className="font-medium"><div className="flex items-center gap-2"><CompanyLogo company={a.company} size={24} />{a.company}</div></td>
                 <td>{a.role}</td>
                 <td><span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ${STATUS_COLORS[a.status] || 'bg-gray-100 text-gray-700'}`}>{a.status}</span></td>
                 <td className="text-muted">{a.dateApplied ? format(new Date(a.dateApplied), 'MMM d, yyyy') : ''}</td>

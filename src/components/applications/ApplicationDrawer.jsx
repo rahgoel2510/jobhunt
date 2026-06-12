@@ -74,32 +74,36 @@ export default function ApplicationDrawer({ id, onClose, onSaved }) {
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" onClick={onClose}>
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
-      <div className="relative w-full max-w-2xl max-h-[90vh] bg-bg-card shadow-2xl rounded-xl flex flex-col animate-[fadeIn_0.15s_ease]" onClick={e => e.stopPropagation()}>
+      <div className="relative w-full max-w-3xl max-h-[90vh] bg-bg-card shadow-2xl rounded-xl flex flex-col animate-[fadeIn_0.15s_ease]" onClick={e => e.stopPropagation()}>
 
         {/* Header */}
-        <div className="shrink-0 px-5 pt-4 pb-3 border-b border-border">
+        <div className="shrink-0 px-6 pt-5 pb-4 border-b border-border">
           <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-2.5">
-              <CompanyLogo company={form.company} size={36} />
+            <div className="flex items-center gap-3">
+              <CompanyLogo company={form.company} size={44} />
               <div>
-                <h2 className="text-sm font-bold">{form.company || 'New Application'}</h2>
+                <h2 className="text-lg font-bold">{form.company || 'New Application'}</h2>
                 <p className="text-sm text-muted">{form.role || 'Role'}{form.source ? ` · via ${form.source}` : ''}</p>
               </div>
             </div>
-            <button onClick={onClose} className="w-7 h-7 rounded-full border-0 bg-bg-secondary text-muted text-xs">✕</button>
+            <button onClick={onClose} className="w-8 h-8 rounded-full border-0 bg-bg-secondary text-muted text-sm hover:bg-border">✕</button>
           </div>
           {/* Progress bar */}
-          {id !== 'new' && <div className="flex items-center gap-0.5">
+          {id !== 'new' && <div className="flex items-center mt-3">
             {PROCESS_STAGES.map((s, i) => {
               const reached = currentIdx >= i
               const isCurrent = stageOrder[currentIdx] === s.status || (s.status === 'Interview Scheduled' && form.status === 'Interview In Progress')
-              return <div key={s.status} className="flex-1 flex flex-col items-center">
-                <div className={`w-full h-1.5 rounded-full ${reached ? 'bg-accent' : 'bg-border'} ${isCurrent ? 'ring-1 ring-accent/50' : ''}`} />
-                <span className={`text-[7px] mt-0.5 ${isCurrent ? 'font-bold text-accent' : reached ? 'text-text-primary' : 'text-muted'}`}>{s.label}</span>
+              return <div key={s.status} className="flex-1 flex flex-col items-center relative">
+                {i > 0 && <div className={`absolute top-4 right-1/2 w-full h-0.5 -z-0 ${reached ? 'bg-accent' : 'bg-border'}`} />}
+                <div className={`relative z-10 w-8 h-8 rounded-full flex items-center justify-center text-base transition-all
+                  ${isCurrent ? 'bg-accent text-white shadow-md shadow-accent/30 ring-4 ring-accent/20 scale-110' : reached ? 'bg-accent text-white' : 'bg-bg-secondary text-muted border-2 border-border'}`}>
+                  {s.icon}
+                </div>
+                <span className={`text-[11px] mt-1.5 font-medium ${isCurrent ? 'text-accent font-bold' : reached ? 'text-text-primary' : 'text-muted'}`}>{s.label}</span>
               </div>
             })}
           </div>}
-          {isTerminal && <div className="mt-1"><span className="text-xs font-bold px-2 py-0.5 rounded-full bg-red-50 text-red-600">{form.status}</span></div>}
+          {isTerminal && <div className="mt-3 text-center"><span className="text-sm font-bold px-3 py-1 rounded-full bg-red-50 text-red-600 border border-red-200">{form.status}</span></div>}
         </div>
 
         <div className="flex-1 overflow-y-auto">

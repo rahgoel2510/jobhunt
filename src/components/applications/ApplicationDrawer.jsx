@@ -72,9 +72,9 @@ export default function ApplicationDrawer({ id, onClose, onSaved }) {
   const availableResumes = resumes.filter(r => !(r.linkedApps || []).includes(id))
 
   return (
-    <div className="fixed inset-0 z-[100] flex justify-end" onClick={onClose}>
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px]" />
-      <div className="relative w-full max-w-[560px] h-full bg-bg-card shadow-2xl flex flex-col animate-[slideIn_0.2s_ease]" onClick={e => e.stopPropagation()}>
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" onClick={onClose}>
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
+      <div className="relative w-full max-w-2xl max-h-[90vh] bg-bg-card shadow-2xl rounded-xl flex flex-col animate-[fadeIn_0.15s_ease]" onClick={e => e.stopPropagation()}>
 
         {/* Header */}
         <div className="shrink-0 px-5 pt-4 pb-3 border-b border-border">
@@ -83,7 +83,7 @@ export default function ApplicationDrawer({ id, onClose, onSaved }) {
               <CompanyLogo company={form.company} size={36} />
               <div>
                 <h2 className="text-sm font-bold">{form.company || 'New Application'}</h2>
-                <p className="text-[11px] text-muted">{form.role || 'Role'}{form.source ? ` · via ${form.source}` : ''}</p>
+                <p className="text-sm text-muted">{form.role || 'Role'}{form.source ? ` · via ${form.source}` : ''}</p>
               </div>
             </div>
             <button onClick={onClose} className="w-7 h-7 rounded-full border-0 bg-bg-secondary text-muted text-xs">✕</button>
@@ -99,7 +99,7 @@ export default function ApplicationDrawer({ id, onClose, onSaved }) {
               </div>
             })}
           </div>}
-          {isTerminal && <div className="mt-1"><span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-50 text-red-600">{form.status}</span></div>}
+          {isTerminal && <div className="mt-1"><span className="text-xs font-bold px-2 py-0.5 rounded-full bg-red-50 text-red-600">{form.status}</span></div>}
         </div>
 
         <div className="flex-1 overflow-y-auto">
@@ -107,14 +107,14 @@ export default function ApplicationDrawer({ id, onClose, onSaved }) {
           {/* ═══ ADVANCE CONTROLS ═══ */}
           {id !== 'new' && !isTerminal && currentIdx < stageOrder.length - 1 && <div className="px-5 py-3 border-b border-border bg-accent/5">
             <div className="flex gap-1.5">
-              <button type="button" className="primary flex-1 text-[11px] py-1.5" onClick={() => advanceTo(stageOrder[currentIdx + 1])}>
+              <button type="button" className="primary flex-1 text-sm py-1.5" onClick={() => advanceTo(stageOrder[currentIdx + 1])}>
                 → {stageOrder[currentIdx + 1]}
               </button>
-              {currentIdx < 6 && <button type="button" className="text-[10px] border-red-200 text-red-600 hover:bg-red-50 px-2" onClick={() => advanceTo('Rejected')}>Reject</button>}
-              {currentIdx < 3 && <button type="button" className="text-[10px] border-orange-200 text-orange-600 hover:bg-orange-50 px-2" onClick={() => advanceTo('Ghosted')}>Ghost</button>}
-              {currentIdx >= 3 && <button type="button" className="text-[10px] border-gray-200 text-gray-600 hover:bg-gray-50 px-2" onClick={() => advanceTo('Withdrawn')}>Withdraw</button>}
+              {currentIdx < 6 && <button type="button" className="text-xs border-red-200 text-red-600 hover:bg-red-50 px-2" onClick={() => advanceTo('Rejected')}>Reject</button>}
+              {currentIdx < 3 && <button type="button" className="text-xs border-orange-200 text-orange-600 hover:bg-orange-50 px-2" onClick={() => advanceTo('Ghosted')}>Ghost</button>}
+              {currentIdx >= 3 && <button type="button" className="text-xs border-gray-200 text-gray-600 hover:bg-gray-50 px-2" onClick={() => advanceTo('Withdrawn')}>Withdraw</button>}
             </div>
-            {form.status === 'Offer' && <button type="button" className="w-full mt-1.5 text-[10px] border-amber-200 text-amber-700 hover:bg-amber-50" onClick={() => advanceTo('Offer Negotiation')}>↔ Negotiation</button>}
+            {form.status === 'Offer' && <button type="button" className="w-full mt-1.5 text-xs border-amber-200 text-amber-700 hover:bg-amber-50" onClick={() => advanceTo('Offer Negotiation')}>↔ Negotiation</button>}
           </div>}
 
           {/* ═══ STEP 1: FIND ROLE (Wishlist/Applied) ═══ */}
@@ -133,15 +133,15 @@ export default function ApplicationDrawer({ id, onClose, onSaved }) {
 
             {/* Resume — "which resume went where" */}
             <div className="bg-bg-secondary rounded-md p-2.5 space-y-1.5">
-              <p className="text-[9px] font-bold uppercase text-muted">📄 Resume Used</p>
-              {linkedResumes.map(r => <div key={r.id} className="flex items-center gap-2 text-xs"><span className={`text-[8px] px-1 py-0.5 rounded font-bold ${r.category==='Tailored'?'bg-purple-50 text-purple-700':'bg-sky-50 text-sky-700'}`}>{r.category==='Tailored'?'🎯':'📋'}</span><span className="flex-1 truncate">{r.name}</span>{id!=='new'&&<button type="button" onClick={()=>toggleResume(r.id)} className="text-[8px] text-danger border-0 bg-transparent p-0">✕</button>}</div>)}
-              {id !== 'new' && availableResumes.length > 0 && <div className="flex flex-wrap gap-1">{availableResumes.map(r => <button key={r.id} type="button" onClick={() => toggleResume(r.id)} className="text-[9px] px-1.5 py-0.5 rounded bg-bg-card border border-border hover:border-accent hover:text-accent">+ {r.name}</button>)}</div>}
+              <p className="text-xs font-bold uppercase text-muted">📄 Resume Used</p>
+              {linkedResumes.map(r => <div key={r.id} className="flex items-center gap-2 text-xs"><span className={`text-sm px-1 py-0.5 rounded font-bold ${r.category==='Tailored'?'bg-purple-50 text-purple-700':'bg-sky-50 text-sky-700'}`}>{r.category==='Tailored'?'🎯':'📋'}</span><span className="flex-1 truncate">{r.name}</span>{id!=='new'&&<button type="button" onClick={()=>toggleResume(r.id)} className="text-sm text-danger border-0 bg-transparent p-0">✕</button>}</div>)}
+              {id !== 'new' && availableResumes.length > 0 && <div className="flex flex-wrap gap-1">{availableResumes.map(r => <button key={r.id} type="button" onClick={() => toggleResume(r.id)} className="text-xs px-1.5 py-0.5 rounded bg-bg-card border border-border hover:border-accent hover:text-accent">+ {r.name}</button>)}</div>}
               <div className="flex gap-1 items-center">
                 <input placeholder="New resume (e.g. TPM-v3-AWS-focus)" value={resumeName} onChange={e => setResumeName(e.target.value)} className="flex-1" />
-                <select value={resumeCategory} onChange={e => setResumeCategory(e.target.value)} className="w-20 text-[9px]"><option>General</option><option>Tailored</option></select>
-                <button type="button" onClick={() => fileRef.current?.click()} className="text-[9px] px-1.5">{resumeFile?'📎':'📁'}</button>
+                <select value={resumeCategory} onChange={e => setResumeCategory(e.target.value)} className="w-20 text-xs"><option>General</option><option>Tailored</option></select>
+                <button type="button" onClick={() => fileRef.current?.click()} className="text-xs px-1.5">{resumeFile?'📎':'📁'}</button>
                 <input ref={fileRef} type="file" accept=".pdf,.docx" className="hidden" onChange={e => setResumeFile(e.target.files[0])} />
-                {resumeFile && resumeName && <button type="button" className="primary text-[9px] px-2" onClick={uploadResume}>↑</button>}
+                {resumeFile && resumeName && <button type="button" className="primary text-xs px-2" onClick={uploadResume}>↑</button>}
               </div>
             </div>
           </Section>}
@@ -150,9 +150,9 @@ export default function ApplicationDrawer({ id, onClose, onSaved }) {
           {id !== 'new' && currentIdx >= 2 && <Section label="Step 3 · Salary Research" hint="Do this BEFORE the recruiter asks. Manual lookup.">
             <div className="flex gap-1.5 mb-2">
               {form.company && form.role && <>
-                <a href={getGlassdoorUrl(form.company, form.role)} target="_blank" rel="noopener" className="text-[9px] px-2 py-1 rounded-md bg-green-50 text-green-700 border border-green-200 font-semibold no-underline hover:bg-green-100 flex-1 text-center">Glassdoor</a>
-                <a href={getLevelsFyiUrl(form.company, form.role)} target="_blank" rel="noopener" className="text-[9px] px-2 py-1 rounded-md bg-blue-50 text-blue-700 border border-blue-200 font-semibold no-underline hover:bg-blue-100 flex-1 text-center">Levels.fyi</a>
-                <a href={`https://www.ambitionbox.com/salaries/${encodeURIComponent(form.company.toLowerCase().replace(/\s+/g,'-'))}-salaries`} target="_blank" rel="noopener" className="text-[9px] px-2 py-1 rounded-md bg-orange-50 text-orange-700 border border-orange-200 font-semibold no-underline hover:bg-orange-100 flex-1 text-center">AmbitionBox</a>
+                <a href={getGlassdoorUrl(form.company, form.role)} target="_blank" rel="noopener" className="text-xs px-2 py-1 rounded-md bg-green-50 text-green-700 border border-green-200 font-semibold no-underline hover:bg-green-100 flex-1 text-center">Glassdoor</a>
+                <a href={getLevelsFyiUrl(form.company, form.role)} target="_blank" rel="noopener" className="text-xs px-2 py-1 rounded-md bg-blue-50 text-blue-700 border border-blue-200 font-semibold no-underline hover:bg-blue-100 flex-1 text-center">Levels.fyi</a>
+                <a href={`https://www.ambitionbox.com/salaries/${encodeURIComponent(form.company.toLowerCase().replace(/\s+/g,'-'))}-salaries`} target="_blank" rel="noopener" className="text-xs px-2 py-1 rounded-md bg-orange-50 text-orange-700 border border-orange-200 font-semibold no-underline hover:bg-orange-100 flex-1 text-center">AmbitionBox</a>
               </>}
             </div>
             <div><label>Research Notes (range + source)</label><textarea rows={2} value={form.salaryResearch || ''} onChange={set('salaryResearch')} placeholder="e.g. ₹28-40L (Glassdoor), $150-180K (Levels.fyi for L5)..." /></div>
@@ -172,61 +172,61 @@ export default function ApplicationDrawer({ id, onClose, onSaved }) {
             {rounds.map((r, i) => (
               <div key={r.id} className="rounded-lg border border-border overflow-hidden">
                 <div className="flex items-center gap-2 p-2.5 cursor-pointer hover:bg-bg-secondary/30" onClick={() => setExpandedRound(expandedRound === r.id ? null : r.id)}>
-                  <div className="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold text-white bg-violet-600">{i+1}</div>
+                  <div className="w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold text-white bg-violet-600">{i+1}</div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-[11px] font-semibold">{r.type}{r.medium ? ` · ${r.medium}` : ''}</p>
-                    <p className="text-[9px] text-muted">{r.date ? format(new Date(r.date), 'MMM d') : ''}{r.time ? ` ${r.time}` : ''}{r.interviewer ? ` · ${r.interviewer}` : ''}</p>
+                    <p className="text-sm font-semibold">{r.type}{r.medium ? ` · ${r.medium}` : ''}</p>
+                    <p className="text-xs text-muted">{r.date ? format(new Date(r.date), 'MMM d') : ''}{r.time ? ` ${r.time}` : ''}{r.interviewer ? ` · ${r.interviewer}` : ''}</p>
                   </div>
-                  <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded ${r.result==='Passed'?'bg-green-50 text-green-700':r.result==='Failed'?'bg-red-50 text-red-700':'bg-amber-50 text-amber-700'}`}>{r.result||'Pending'}</span>
-                  <span className="text-[9px] text-muted">{expandedRound===r.id?'▲':'▼'}</span>
+                  <span className={`text-sm font-bold px-1.5 py-0.5 rounded ${r.result==='Passed'?'bg-green-50 text-green-700':r.result==='Failed'?'bg-red-50 text-red-700':'bg-amber-50 text-amber-700'}`}>{r.result||'Pending'}</span>
+                  <span className="text-xs text-muted">{expandedRound===r.id?'▲':'▼'}</span>
                 </div>
 
                 {expandedRound === r.id && <div className="border-t border-border">
                   {/* Scheduling */}
                   <div className="p-2.5 space-y-2 bg-bg-secondary/20">
                     <div className="grid grid-cols-3 gap-2">
-                      <div><label className="text-[8px]">Date</label><input type="date" value={r.date||''} onChange={e => updateRound(r, {date: e.target.value})} /></div>
-                      <div><label className="text-[8px]">Time</label><input type="time" value={r.time||''} onChange={e => updateRound(r, {time: e.target.value})} /></div>
-                      <div><label className="text-[8px]">Medium</label><select value={r.medium||''} onChange={e => updateRound(r, {medium: e.target.value})}><option value="">—</option>{INTERVIEW_MEDIUMS.map(m => <option key={m}>{m}</option>)}</select></div>
+                      <div><label className="text-sm">Date</label><input type="date" value={r.date||''} onChange={e => updateRound(r, {date: e.target.value})} /></div>
+                      <div><label className="text-sm">Time</label><input type="time" value={r.time||''} onChange={e => updateRound(r, {time: e.target.value})} /></div>
+                      <div><label className="text-sm">Medium</label><select value={r.medium||''} onChange={e => updateRound(r, {medium: e.target.value})}><option value="">—</option>{INTERVIEW_MEDIUMS.map(m => <option key={m}>{m}</option>)}</select></div>
                     </div>
                     <div className="grid grid-cols-2 gap-2">
-                      <div><label className="text-[8px]">Interviewer</label><input value={r.interviewer||''} onChange={e => updateRound(r, {interviewer: e.target.value})} /></div>
-                      <div><label className="text-[8px]">Result</label><select value={r.result||'Pending'} onChange={e => updateRound(r, {result: e.target.value})}><option>Pending</option><option>Passed</option><option>Failed</option></select></div>
+                      <div><label className="text-sm">Interviewer</label><input value={r.interviewer||''} onChange={e => updateRound(r, {interviewer: e.target.value})} /></div>
+                      <div><label className="text-sm">Result</label><select value={r.result||'Pending'} onChange={e => updateRound(r, {result: e.target.value})}><option>Pending</option><option>Passed</option><option>Failed</option></select></div>
                     </div>
                   </div>
 
                   {/* Round-specific prep */}
                   <div className="p-2.5 border-t border-border bg-indigo-50/30">
-                    <p className="text-[8px] font-bold uppercase text-indigo-700 mb-1">📚 Prep (before this round)</p>
+                    <p className="text-sm font-bold uppercase text-indigo-700 mb-1">📚 Prep (before this round)</p>
                     <textarea rows={2} value={r.prep||''} onChange={e => updateRound(r, {prep: e.target.value})} placeholder="What this round likely covers, stories to use, technical topics..." className="bg-white" />
                   </div>
 
                   {/* Retrospective */}
                   <div className="p-2.5 border-t border-border bg-emerald-50/30">
-                    <p className="text-[8px] font-bold uppercase text-emerald-700 mb-1">📝 Retro (after this round)</p>
+                    <p className="text-sm font-bold uppercase text-emerald-700 mb-1">📝 Retro (after this round)</p>
                     <textarea rows={2} value={r.retro||''} onChange={e => updateRound(r, {retro: e.target.value})} placeholder="What went well, what you fumbled, questions you couldn't answer, confidence..." className="bg-white" />
                   </div>
 
                   <div className="p-2 border-t border-border">
-                    <button type="button" onClick={() => deleteRound(r.id)} className="text-[9px] text-danger border-0 bg-transparent p-0">🗑 Delete</button>
+                    <button type="button" onClick={() => deleteRound(r.id)} className="text-xs text-danger border-0 bg-transparent p-0">🗑 Delete</button>
                   </div>
                 </div>}
               </div>
             ))}
 
             {roundForm ? <div className="rounded-lg border border-accent/30 bg-accent/5 p-2.5 space-y-2">
-              <p className="text-[9px] font-bold text-accent">Round #{rounds.length + 1}</p>
+              <p className="text-xs font-bold text-accent">Round #{rounds.length + 1}</p>
               <div className="grid grid-cols-2 gap-2">
-                <div><label className="text-[8px]">Type</label><select value={roundForm.type} onChange={e => setRoundForm(f=>({...f,type:e.target.value}))}>{ROUND_TYPES.map(t=><option key={t}>{t}</option>)}</select></div>
-                <div><label className="text-[8px]">Medium</label><select value={roundForm.medium} onChange={e => setRoundForm(f=>({...f,medium:e.target.value}))}>{INTERVIEW_MEDIUMS.map(m=><option key={m}>{m}</option>)}</select></div>
+                <div><label className="text-sm">Type</label><select value={roundForm.type} onChange={e => setRoundForm(f=>({...f,type:e.target.value}))}>{ROUND_TYPES.map(t=><option key={t}>{t}</option>)}</select></div>
+                <div><label className="text-sm">Medium</label><select value={roundForm.medium} onChange={e => setRoundForm(f=>({...f,medium:e.target.value}))}>{INTERVIEW_MEDIUMS.map(m=><option key={m}>{m}</option>)}</select></div>
               </div>
               <div className="grid grid-cols-2 gap-2">
-                <div><label className="text-[8px]">Date</label><input type="date" value={roundForm.date} onChange={e => setRoundForm(f=>({...f,date:e.target.value}))} /></div>
-                <div><label className="text-[8px]">Time</label><input type="time" value={roundForm.time} onChange={e => setRoundForm(f=>({...f,time:e.target.value}))} /></div>
+                <div><label className="text-sm">Date</label><input type="date" value={roundForm.date} onChange={e => setRoundForm(f=>({...f,date:e.target.value}))} /></div>
+                <div><label className="text-sm">Time</label><input type="time" value={roundForm.time} onChange={e => setRoundForm(f=>({...f,time:e.target.value}))} /></div>
               </div>
-              <div><label className="text-[8px]">Interviewer</label><input value={roundForm.interviewer} onChange={e => setRoundForm(f=>({...f,interviewer:e.target.value}))} /></div>
-              <div className="flex gap-1.5"><button type="button" className="primary flex-1 text-[10px]" onClick={saveRound}>Add</button><button type="button" className="text-[10px]" onClick={() => setRoundForm(null)}>Cancel</button></div>
-            </div> : <button type="button" onClick={() => setRoundForm({ type: rounds.length === 0 ? 'Recruiter Screen' : 'Technical', date: new Date().toISOString().slice(0,10), time: '10:00', medium: 'Microsoft Teams', interviewer: '', prep: '', result: 'Pending', retro: '' })} className="w-full border-dashed border-border text-muted text-[10px] py-2.5 hover:border-accent hover:text-accent">+ Add Round</button>}
+              <div><label className="text-sm">Interviewer</label><input value={roundForm.interviewer} onChange={e => setRoundForm(f=>({...f,interviewer:e.target.value}))} /></div>
+              <div className="flex gap-1.5"><button type="button" className="primary flex-1 text-xs" onClick={saveRound}>Add</button><button type="button" className="text-xs" onClick={() => setRoundForm(null)}>Cancel</button></div>
+            </div> : <button type="button" onClick={() => setRoundForm({ type: rounds.length === 0 ? 'Recruiter Screen' : 'Technical', date: new Date().toISOString().slice(0,10), time: '10:00', medium: 'Microsoft Teams', interviewer: '', prep: '', result: 'Pending', retro: '' })} className="w-full border-dashed border-border text-muted text-xs py-2.5 hover:border-accent hover:text-accent">+ Add Round</button>}
           </Section>}
 
           {/* ═══ STEP 8: OFFER ═══ */}
@@ -237,7 +237,7 @@ export default function ApplicationDrawer({ id, onClose, onSaved }) {
           {/* ═══ JOURNEY ═══ */}
           {id !== 'new' && form.statusHistory.length > 0 && <Section label="Journey">
             {[...form.statusHistory].reverse().slice(0, 8).map((h, i) => (
-              <div key={i} className="flex items-center gap-2 text-[10px] py-0.5">
+              <div key={i} className="flex items-center gap-2 text-xs py-0.5">
                 <span className="w-1.5 h-1.5 rounded-full bg-accent shrink-0" />
                 <span className="font-medium">{h.toStatus}</span>
                 <span className="text-muted ml-auto">{format(new Date(h.timestamp), 'MMM d, HH:mm')}</span>
@@ -253,14 +253,14 @@ export default function ApplicationDrawer({ id, onClose, onSaved }) {
           {id !== 'new' && <button type="button" className="danger px-2.5" onClick={remove}>🗑</button>}
         </div>
       </div>
-      <style>{`@keyframes slideIn{from{transform:translateX(100%)}to{transform:translateX(0)}}`}</style>
+      <style>{`@keyframes fadeIn{from{opacity:0;transform:scale(0.97)}to{opacity:1;transform:scale(1)}}`}</style>
     </div>
   )
 }
 
 function Section({ label, hint, children }) {
   return <div className="px-5 py-3 border-b border-border space-y-2">
-    <div><p className="text-[10px] font-bold uppercase text-muted">{label}</p>{hint && <p className="text-[9px] text-muted italic">{hint}</p>}</div>
+    <div><p className="text-xs font-bold uppercase text-muted">{label}</p>{hint && <p className="text-xs text-muted italic">{hint}</p>}</div>
     {children}
   </div>
 }

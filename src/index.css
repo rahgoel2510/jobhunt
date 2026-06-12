@@ -31,12 +31,12 @@
 
 /* Base resets */
 body {
-  @apply bg-bg text-text-primary antialiased text-sm leading-relaxed;
+  @apply bg-bg text-text-primary antialiased text-base leading-relaxed;
 }
 
 /* Compact shadcn-style components */
 button, .btn {
-  @apply inline-flex items-center justify-center gap-1.5 rounded-md border border-border bg-bg-card px-3 py-1.5 text-xs font-medium text-text-primary transition-all duration-150 hover:bg-bg-secondary cursor-pointer;
+  @apply inline-flex items-center justify-center gap-1.5 rounded-md border border-border bg-bg-card px-3 py-2 text-sm font-medium text-text-primary transition-all duration-150 hover:bg-bg-secondary cursor-pointer;
 }
 button:active { @apply scale-[0.98]; }
 .btn-primary, button.primary {
@@ -50,10 +50,10 @@ button:active { @apply scale-[0.98]; }
 }
 
 input, textarea, select {
-  @apply w-full rounded-md border border-border bg-bg px-2.5 py-1.5 text-xs text-text-primary transition-colors placeholder:text-muted/60 focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent;
+  @apply w-full rounded-md border border-border bg-bg px-3 py-2 text-sm text-text-primary transition-colors placeholder:text-muted/60 focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent;
 }
 label {
-  @apply block mb-1 text-[11px] font-semibold uppercase tracking-wide text-muted;
+  @apply block mb-1 text-xs font-semibold uppercase tracking-wide text-muted;
 }
 
 .card {
@@ -62,8 +62,8 @@ label {
 
 /* Tables */
 table { @apply w-full; }
-th { @apply text-left px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-muted border-b-2 border-border; }
-td { @apply px-3 py-2 text-xs border-b border-border; }
+th { @apply text-left px-3 py-2.5 text-xs font-semibold uppercase tracking-wider text-muted border-b-2 border-border; }
+td { @apply px-3 py-2.5 text-sm border-b border-border; }
 tbody tr { @apply transition-colors hover:bg-accent-light cursor-pointer; }
 
 /* Badges */

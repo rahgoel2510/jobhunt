@@ -43,7 +43,7 @@ export default function Applications() {
           <option value="">All statuses</option>
           {STATUSES.map(s => <option key={s}>{s}</option>)}
         </select>
-        <span className="text-[10px] text-muted">{filtered.length} applications</span>
+        <span className="text-xs text-muted">{filtered.length} applications</span>
         <button className="primary ml-auto" onClick={() => setDrawerId('new')}>+ Add</button>
       </div>
 
@@ -84,7 +84,7 @@ function TreeRow({ app, rounds, isOpen, days, toggle, onEdit }) {
     {/* Parent row */}
     <tr className="group">
       <td className="!px-2 !py-1.5">
-        <button type="button" onClick={toggle} className="w-5 h-5 flex items-center justify-center rounded border-0 bg-transparent text-muted text-[10px] hover:bg-bg-secondary p-0">
+        <button type="button" onClick={toggle} className="w-5 h-5 flex items-center justify-center rounded border-0 bg-transparent text-muted text-xs hover:bg-bg-secondary p-0">
           {rounds.length > 0 ? (isOpen ? '▼' : '▶') : '·'}
         </button>
       </td>
@@ -96,11 +96,11 @@ function TreeRow({ app, rounds, isOpen, days, toggle, onEdit }) {
       </td>
       <td className="!py-1.5 text-xs cursor-pointer" onClick={onEdit}>{app.role}</td>
       <td className="!py-1.5">
-        <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full whitespace-nowrap" style={{ backgroundColor: (STATUS_COLORS[app.status] || '#94a3b8') + '18', color: STATUS_COLORS[app.status] || '#94a3b8' }}>{app.status}</span>
+        <span className="text-xs font-bold px-1.5 py-0.5 rounded-full whitespace-nowrap" style={{ backgroundColor: (STATUS_COLORS[app.status] || '#94a3b8') + '18', color: STATUS_COLORS[app.status] || '#94a3b8' }}>{app.status}</span>
       </td>
-      <td className="!py-1.5 text-[10px] text-muted">{rounds.length || '—'}</td>
-      <td className="!py-1.5 text-[10px] text-muted">{app.dateApplied ? format(new Date(app.dateApplied), 'MMM d') : ''}</td>
-      <td className="!py-1.5 text-[10px] text-muted">{days}{days && 'd'}</td>
+      <td className="!py-1.5 text-xs text-muted">{rounds.length || '—'}</td>
+      <td className="!py-1.5 text-xs text-muted">{app.dateApplied ? format(new Date(app.dateApplied), 'MMM d') : ''}</td>
+      <td className="!py-1.5 text-xs text-muted">{days}{days && 'd'}</td>
     </tr>
 
     {/* Child rows (rounds) */}
@@ -109,14 +109,14 @@ function TreeRow({ app, rounds, isOpen, days, toggle, onEdit }) {
         <td className="!px-2 !py-1"></td>
         <td colSpan={6} className="!py-1.5 !pl-10">
           <div className="flex items-center gap-2">
-            <span className="w-4 h-4 rounded-full bg-violet-600 text-white text-[8px] font-bold flex items-center justify-center shrink-0">{i+1}</span>
-            <span className="text-[11px] font-medium">{r.type}</span>
-            {r.medium && <span className="text-[9px] text-muted bg-bg-secondary px-1.5 py-0.5 rounded">{r.medium}</span>}
-            {r.date && <span className="text-[9px] text-muted">{format(new Date(r.date), 'MMM d')}{r.time ? ` ${r.time}` : ''}</span>}
-            {r.interviewer && <span className="text-[9px] text-muted">· {r.interviewer}</span>}
-            <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded ml-auto ${r.result === 'Passed' ? 'bg-green-50 text-green-700' : r.result === 'Failed' ? 'bg-red-50 text-red-700' : 'bg-amber-50 text-amber-700'}`}>{r.result || 'Pending'}</span>
+            <span className="w-4 h-4 rounded-full bg-violet-600 text-white text-sm font-bold flex items-center justify-center shrink-0">{i+1}</span>
+            <span className="text-sm font-medium">{r.type}</span>
+            {r.medium && <span className="text-xs text-muted bg-bg-secondary px-1.5 py-0.5 rounded">{r.medium}</span>}
+            {r.date && <span className="text-xs text-muted">{format(new Date(r.date), 'MMM d')}{r.time ? ` ${r.time}` : ''}</span>}
+            {r.interviewer && <span className="text-xs text-muted">· {r.interviewer}</span>}
+            <span className={`text-sm font-bold px-1.5 py-0.5 rounded ml-auto ${r.result === 'Passed' ? 'bg-green-50 text-green-700' : r.result === 'Failed' ? 'bg-red-50 text-red-700' : 'bg-amber-50 text-amber-700'}`}>{r.result || 'Pending'}</span>
           </div>
-          {(r.prep || r.retro) && <div className="mt-1 flex gap-3 text-[9px] text-muted pl-6">
+          {(r.prep || r.retro) && <div className="mt-1 flex gap-3 text-xs text-muted pl-6">
             {r.prep && <span>📚 <span className="text-text-primary">{r.prep.slice(0, 60)}{r.prep.length > 60 ? '...' : ''}</span></span>}
             {r.retro && <span>📝 <span className="text-text-primary">{r.retro.slice(0, 60)}{r.retro.length > 60 ? '...' : ''}</span></span>}
           </div>}

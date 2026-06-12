@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react'
 import { store } from '../../lib/store'
 import { STATUSES } from '../../lib/constants'
+import { format, differenceInDays } from 'date-fns'
 import CompanyLogo from '../shared/CompanyLogo'
 import ApplicationDrawer from './ApplicationDrawer'
-import { format, differenceInDays } from 'date-fns'
 
 const STATUS_COLORS = {
   'Wishlist': '#94a3b8', 'Applied': '#3b82f6',
@@ -13,105 +13,118 @@ const STATUS_COLORS = {
   'Rejected': '#ef4444', 'Withdrawn': '#64748b', 'Ghosted': '#f97316',
 }
 
-// Group statuses into pipeline stages for the kanban
-const STAGES = [
-  { id: 'early', label: '📨 Applied', statuses: ['Wishlist', 'Applied'] },
-  { id: 'screening', label: '📞 Screening', statuses: ['Recruiter Screen Scheduled', 'Recruiter Screen Done'] },
-  { id: 'interviewing', label: '🎯 Interviews', statuses: ['Interview Scheduled', 'Interview In Progress'] },
-  { id: 'offer', label: '🎉 Offer', statuses: ['Offer', 'Offer Negotiation', 'Accepted'] },
-  { id: 'closed', label: '📁 Closed', statuses: ['Rejected', 'Withdrawn', 'Ghosted'] },
-]
-
 export default function Applications() {
   const [apps, setApps] = useState([])
+  const [rounds, setRounds] = useState([])
   const [drawerId, setDrawerId] = useState(null)
-  const [view, setView] = useState('board')
+  const [expanded, setExpanded] = useState({})
+  const [filter, setFilter] = useState('')
+  const [search, setSearch] = useState('')
 
-  const load = () => store.getAll('applications').then(setApps)
+  const load = async () => {
+    setApps(await store.getAll('applications'))
+    setRounds(await store.getAll('interviewRounds'))
+  }
   useEffect(() => { load() }, [])
+
+  function toggle(id) { setExpanded(e => ({ ...e, [id]: !e[id] })) }
+
+  const filtered = apps.filter(a => {
+    if (filter && a.status !== filter) return false
+    if (search) { const q = search.toLowerCase(); return (a.company||'').toLowerCase().includes(q) || (a.role||'').toLowerCase().includes(q) }
+    return true
+  }).sort((a, b) => new Date(b.dateApplied || 0) - new Date(a.dateApplied || 0))
 
   return (
     <div className="space-y-3">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div className="flex bg-bg-secondary rounded-lg p-0.5">
-            <button onClick={() => setView('board')} className={`text-[10px] px-2.5 py-1 rounded-md border-0 ${view === 'board' ? 'bg-bg-card shadow-sm font-bold' : 'bg-transparent text-muted'}`}>Board</button>
-            <button onClick={() => setView('list')} className={`text-[10px] px-2.5 py-1 rounded-md border-0 ${view === 'list' ? 'bg-bg-card shadow-sm font-bold' : 'bg-transparent text-muted'}`}>List</button>
-          </div>
-          <span className="text-[10px] text-muted">{apps.length} applications</span>
-        </div>
-        <button className="primary" onClick={() => setDrawerId('new')}>+ Add</button>
+      <div className="flex items-center gap-2 flex-wrap">
+        <input className="max-w-[200px]" placeholder="Search..." value={search} onChange={e => setSearch(e.target.value)} />
+        <select className="max-w-[180px]" value={filter} onChange={e => setFilter(e.target.value)}>
+          <option value="">All statuses</option>
+          {STATUSES.map(s => <option key={s}>{s}</option>)}
+        </select>
+        <span className="text-[10px] text-muted">{filtered.length} applications</span>
+        <button className="primary ml-auto" onClick={() => setDrawerId('new')}>+ Add</button>
       </div>
 
-      {view === 'board' ? (
-        <div className="flex gap-2 overflow-x-auto pb-2" style={{ minHeight: 'calc(100vh - 160px)' }}>
-          {STAGES.map(stage => {
-            const stageApps = apps.filter(a => stage.statuses.includes(a.status))
-            return (
-              <div key={stage.id} className="flex-shrink-0 w-56 flex flex-col">
-                {/* Column header */}
-                <div className="flex items-center gap-1.5 px-2 py-2 rounded-t-lg bg-bg-secondary border border-border border-b-0">
-                  <span className="text-xs">{stage.label}</span>
-                  <span className="text-[9px] font-bold bg-bg-card px-1.5 py-0.5 rounded-full text-muted">{stageApps.length}</span>
-                </div>
-                {/* Cards */}
-                <div className="flex-1 border border-border border-t-0 rounded-b-lg bg-bg-secondary/30 p-1.5 space-y-1.5 overflow-y-auto">
-                  {stageApps.map(a => (
-                    <KanbanCard key={a.id} app={a} onClick={() => setDrawerId(a.id)} />
-                  ))}
-                  {stageApps.length === 0 && <p className="text-[9px] text-muted text-center py-4">Empty</p>}
-                </div>
-              </div>
-            )
-          })}
-        </div>
-      ) : (
-        <div className="card p-0 overflow-hidden">
-          <table>
-            <thead><tr><th>Company</th><th>Role</th><th>Status</th><th>Applied</th><th>Days</th></tr></thead>
-            <tbody>
-              {apps.map(a => (
-                <tr key={a.id} onClick={() => setDrawerId(a.id)}>
-                  <td><div className="flex items-center gap-2"><CompanyLogo company={a.company} size={20} /><span className="font-medium text-xs">{a.company}</span></div></td>
-                  <td className="text-xs">{a.role}</td>
-                  <td><span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full" style={{ backgroundColor: STATUS_COLORS[a.status] + '20', color: STATUS_COLORS[a.status] }}>{a.status}</span></td>
-                  <td className="text-[10px] text-muted">{a.dateApplied ? format(new Date(a.dateApplied), 'MMM d') : ''}</td>
-                  <td className="text-[10px] text-muted">{a.dateApplied ? differenceInDays(new Date(), new Date(a.dateApplied)) + 'd' : ''}</td>
-                </tr>
-              ))}
-              {apps.length === 0 && <tr><td colSpan={5} className="text-center text-muted py-8 text-xs">No applications yet.</td></tr>}
-            </tbody>
-          </table>
-        </div>
-      )}
+      <div className="card p-0 overflow-hidden">
+        <table>
+          <thead>
+            <tr>
+              <th className="w-6"></th>
+              <th>Company</th>
+              <th>Role</th>
+              <th>Status</th>
+              <th>Rounds</th>
+              <th>Applied</th>
+              <th>Days</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filtered.map(a => {
+              const appRounds = rounds.filter(r => r.applicationId === a.id).sort((x, y) => (x.roundNumber||0) - (y.roundNumber||0))
+              const isOpen = expanded[a.id]
+              const days = a.dateApplied ? differenceInDays(new Date(), new Date(a.dateApplied)) : ''
+              return (
+                <TreeRow key={a.id} app={a} rounds={appRounds} isOpen={isOpen} days={days} toggle={() => toggle(a.id)} onEdit={() => setDrawerId(a.id)} />
+              )
+            })}
+            {filtered.length === 0 && <tr><td colSpan={7} className="text-center text-muted py-8 text-xs">No applications.</td></tr>}
+          </tbody>
+        </table>
+      </div>
 
       {drawerId && <ApplicationDrawer id={drawerId} onClose={() => setDrawerId(null)} onSaved={() => { setDrawerId(null); load() }} />}
     </div>
   )
 }
 
-function KanbanCard({ app, onClick }) {
-  const days = app.dateApplied ? differenceInDays(new Date(), new Date(app.dateApplied)) : null
-  const hist = app.statusHistory || []
-  const lastChange = hist.length > 1 ? differenceInDays(new Date(), new Date(hist[hist.length - 1].timestamp)) : null
+function TreeRow({ app, rounds, isOpen, days, toggle, onEdit }) {
+  return <>
+    {/* Parent row */}
+    <tr className="group">
+      <td className="!px-2 !py-1.5">
+        <button type="button" onClick={toggle} className="w-5 h-5 flex items-center justify-center rounded border-0 bg-transparent text-muted text-[10px] hover:bg-bg-secondary p-0">
+          {rounds.length > 0 ? (isOpen ? '▼' : '▶') : '·'}
+        </button>
+      </td>
+      <td className="!py-1.5 cursor-pointer" onClick={onEdit}>
+        <div className="flex items-center gap-2">
+          <CompanyLogo company={app.company} size={22} />
+          <span className="text-xs font-semibold group-hover:text-accent transition-colors">{app.company}</span>
+        </div>
+      </td>
+      <td className="!py-1.5 text-xs cursor-pointer" onClick={onEdit}>{app.role}</td>
+      <td className="!py-1.5">
+        <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full whitespace-nowrap" style={{ backgroundColor: (STATUS_COLORS[app.status] || '#94a3b8') + '18', color: STATUS_COLORS[app.status] || '#94a3b8' }}>{app.status}</span>
+      </td>
+      <td className="!py-1.5 text-[10px] text-muted">{rounds.length || '—'}</td>
+      <td className="!py-1.5 text-[10px] text-muted">{app.dateApplied ? format(new Date(app.dateApplied), 'MMM d') : ''}</td>
+      <td className="!py-1.5 text-[10px] text-muted">{days}{days && 'd'}</td>
+    </tr>
 
-  return (
-    <div onClick={onClick} className="bg-bg-card rounded-lg border border-border p-2.5 cursor-pointer hover:shadow-md hover:border-accent/30 transition-all group">
-      <div className="flex items-start gap-2">
-        <CompanyLogo company={app.company} size={24} />
-        <div className="flex-1 min-w-0">
-          <p className="text-[11px] font-semibold truncate group-hover:text-accent transition-colors">{app.company}</p>
-          <p className="text-[10px] text-muted truncate">{app.role}</p>
-        </div>
-      </div>
-      <div className="flex items-center justify-between mt-2">
-        <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full" style={{ backgroundColor: STATUS_COLORS[app.status] + '20', color: STATUS_COLORS[app.status] }}>{app.status}</span>
-        <div className="flex items-center gap-1.5">
-          {app.tags?.length > 0 && <span className="text-[8px] bg-accent/10 text-accent px-1 py-0.5 rounded">{app.tags[0]}</span>}
-          {days !== null && <span className="text-[9px] text-muted">{days}d</span>}
-        </div>
-      </div>
-      {lastChange !== null && lastChange > 14 && <div className="mt-1.5 flex items-center gap-1"><div className="w-1.5 h-1.5 rounded-full bg-orange-400 animate-pulse" /><span className="text-[8px] text-orange-600">Stale {lastChange}d</span></div>}
-    </div>
-  )
+    {/* Child rows (rounds) */}
+    {isOpen && rounds.map((r, i) => (
+      <tr key={r.id} className="bg-bg-secondary/30">
+        <td className="!px-2 !py-1"></td>
+        <td colSpan={6} className="!py-1.5 !pl-10">
+          <div className="flex items-center gap-2">
+            <span className="w-4 h-4 rounded-full bg-violet-600 text-white text-[8px] font-bold flex items-center justify-center shrink-0">{i+1}</span>
+            <span className="text-[11px] font-medium">{r.type}</span>
+            {r.medium && <span className="text-[9px] text-muted bg-bg-secondary px-1.5 py-0.5 rounded">{r.medium}</span>}
+            {r.date && <span className="text-[9px] text-muted">{format(new Date(r.date), 'MMM d')}{r.time ? ` ${r.time}` : ''}</span>}
+            {r.interviewer && <span className="text-[9px] text-muted">· {r.interviewer}</span>}
+            <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded ml-auto ${r.result === 'Passed' ? 'bg-green-50 text-green-700' : r.result === 'Failed' ? 'bg-red-50 text-red-700' : 'bg-amber-50 text-amber-700'}`}>{r.result || 'Pending'}</span>
+          </div>
+          {(r.prep || r.retro) && <div className="mt-1 flex gap-3 text-[9px] text-muted pl-6">
+            {r.prep && <span>📚 <span className="text-text-primary">{r.prep.slice(0, 60)}{r.prep.length > 60 ? '...' : ''}</span></span>}
+            {r.retro && <span>📝 <span className="text-text-primary">{r.retro.slice(0, 60)}{r.retro.length > 60 ? '...' : ''}</span></span>}
+          </div>}
+        </td>
+      </tr>
+    ))}
+
+    {/* Separator after expanded */}
+    {isOpen && rounds.length > 0 && <tr className="bg-bg-secondary/30"><td colSpan={7} className="!p-0"><div className="h-px bg-border" /></td></tr>}
+  </>
 }

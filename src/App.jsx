@@ -3,10 +3,8 @@ import { AuthProvider, useAuth } from './components/auth/AuthContext'
 import LockScreen from './components/auth/LockScreen'
 import Dashboard from './components/dashboard/Dashboard'
 import Applications from './components/applications/Applications'
-import PrepLibrary from './components/prep/PrepLibrary'
 import Retrospectives from './components/retrospectives/Retrospectives'
 import Resumes from './components/resumes/Resumes'
-import Timeline from './components/timeline/Timeline'
 import ExportImport from './components/shared/ExportImport'
 
 function AppContent() {
@@ -31,9 +29,7 @@ function AppContent() {
     { id: 'dashboard', label: 'Dashboard' },
     { id: 'applications', label: 'Applications' },
     { id: 'resumes', label: 'Resumes' },
-    { id: 'prep', label: 'Prep Library' },
     { id: 'retro', label: 'Retrospectives' },
-    { id: 'timeline', label: 'Timeline' },
   ]
 
   return (
@@ -57,9 +53,7 @@ function AppContent() {
         {tab === 'dashboard' && <Dashboard onNavigate={t => { location.hash = t; setTab(t) }} />}
         {tab === 'applications' && <Applications />}
         {tab === 'resumes' && <Resumes />}
-        {tab === 'prep' && <PrepLibrary />}
         {tab === 'retro' && <Retrospectives />}
-        {tab === 'timeline' && <Timeline />}
         {tab === 'export' && <ExportImport />}
       </main>
     </div>

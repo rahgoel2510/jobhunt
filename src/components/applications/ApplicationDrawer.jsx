@@ -43,6 +43,8 @@ export default function ApplicationDrawer({ id, onClose, onSaved }) {
   const [roundForm, setRoundForm] = useState(null)
   const [editingRetro, setEditingRetro] = useState(null)
   const [retroForm, setRetroForm] = useState(null)
+  const [prep, setPrep] = useState(null)
+  const [editingPrep, setEditingPrep] = useState(false)
   const fileRef = useRef()
 
   useEffect(() => {
@@ -59,6 +61,9 @@ export default function ApplicationDrawer({ id, onClose, onSaved }) {
     setRounds(appRounds)
     const allRetros = await store.getAll('retrospectives')
     setRetros(allRetros.filter(r => r.applicationId === id))
+    const allPreps = await store.getAll('prepGuides')
+    const appPrep = allPreps.find(p => p.applicationId === id)
+    setPrep(appPrep || null)
   }
 
   function set(field) { return e => setForm(f => ({ ...f, [field]: e.target.value })) }
@@ -117,6 +122,13 @@ export default function ApplicationDrawer({ id, onClose, onSaved }) {
     if (retroForm.id) await store.put('retrospectives', retroForm)
     else await store.add('retrospectives', retroForm)
     setEditingRetro(null); setRetroForm(null); loadRounds()
+  }
+
+  async function savePrep() {
+    if (!prep) return
+    if (prep.id) await store.put('prepGuides', prep)
+    else await store.add('prepGuides', { ...prep, applicationId: id })
+    setEditingPrep(false); loadRounds()
   }
 
   function startRetro(round) {
@@ -302,6 +314,46 @@ export default function ApplicationDrawer({ id, onClose, onSaved }) {
 
             {/* Details */}
             <div className="px-5 py-4 space-y-3 border-b border-border">
+
+            {/* ═══ Upcoming Interviews (Timeline) ═══ */}
+            {id !== 'new' && rounds.filter(r => r.date && new Date(r.date) >= new Date(new Date().toISOString().slice(0, 10))).length > 0 && <div className="mb-3 rounded-lg border border-indigo-200 bg-indigo-50/30 p-2.5">
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-indigo-600 mb-1.5">📅 Upcoming</p>
+              {rounds.filter(r => r.date && new Date(r.date) >= new Date(new Date().toISOString().slice(0, 10))).sort((a, b) => new Date(a.date) - new Date(b.date)).map(r => {
+                const daysUntil = Math.ceil((new Date(r.date) - new Date(new Date().toISOString().slice(0, 10))) / 86400000)
+                return (
+                  <div key={r.id} className="flex items-center gap-2 py-1">
+                    <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${daysUntil === 0 ? 'bg-amber-400 text-white' : 'bg-indigo-100 text-indigo-700'}`}>{daysUntil === 0 ? 'Today' : `${daysUntil}d`}</span>
+                    <span className="text-[11px] font-medium">{r.type}</span>
+                    <span className="text-[10px] text-muted">{format(new Date(r.date), 'MMM d')}{r.interviewer ? ` · ${r.interviewer}` : ''}</span>
+                  </div>
+                )
+              })}
+            </div>}
+
+            {/* ═══ Prep Guide ═══ */}
+            {id !== 'new' && <div className="mb-3">
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="mb-0">📚 Prep Guide</label>
+                {!editingPrep && <button type="button" className="text-[10px] text-accent border-0 bg-transparent p-0 font-semibold" onClick={() => { if (!prep) setPrep({ companyResearch: '', talkingPoints: '', anticipatedQuestions: '', storyBankLinks: '' }); setEditingPrep(true) }}>{prep ? '✏️ Edit' : '+ Add'}</button>}
+              </div>
+              {prep && !editingPrep && <div className="rounded-lg border border-border p-2.5 space-y-1.5 text-[10px]">
+                {prep.companyResearch && <div><strong className="text-muted uppercase text-[9px]">Research:</strong><p className="mt-0.5">{prep.companyResearch}</p></div>}
+                {prep.talkingPoints && <div><strong className="text-muted uppercase text-[9px]">Talking Points:</strong><p className="mt-0.5">{prep.talkingPoints}</p></div>}
+                {prep.anticipatedQuestions && <div><strong className="text-muted uppercase text-[9px]">Questions:</strong><p className="mt-0.5">{prep.anticipatedQuestions}</p></div>}
+                {prep.storyBankLinks && <div><strong className="text-muted uppercase text-[9px]">Stories/Links:</strong><p className="mt-0.5">{prep.storyBankLinks}</p></div>}
+              </div>}
+              {editingPrep && <div className="rounded-lg border border-accent/30 bg-accent/5 p-3 space-y-2">
+                <div><label className="text-[9px]">Company Research</label><textarea rows={2} value={prep?.companyResearch || ''} onChange={e => setPrep(p => ({ ...p, companyResearch: e.target.value }))} placeholder="Mission, culture, recent news..." /></div>
+                <div><label className="text-[9px]">Talking Points</label><textarea rows={2} value={prep?.talkingPoints || ''} onChange={e => setPrep(p => ({ ...p, talkingPoints: e.target.value }))} placeholder="Key experiences to highlight..." /></div>
+                <div><label className="text-[9px]">Anticipated Questions</label><textarea rows={2} value={prep?.anticipatedQuestions || ''} onChange={e => setPrep(p => ({ ...p, anticipatedQuestions: e.target.value }))} placeholder="Behavioral, technical questions..." /></div>
+                <div><label className="text-[9px]">Story Bank / Links</label><input value={prep?.storyBankLinks || ''} onChange={e => setPrep(p => ({ ...p, storyBankLinks: e.target.value }))} placeholder="Links to STAR stories, docs..." /></div>
+                <div className="flex gap-1.5">
+                  <button type="button" className="primary text-[10px] flex-1" onClick={savePrep}>Save Prep</button>
+                  <button type="button" className="text-[10px]" onClick={() => setEditingPrep(false)}>Cancel</button>
+                </div>
+              </div>}
+              {!prep && !editingPrep && <p className="text-[10px] text-muted">No prep guide yet. Add research, talking points & questions.</p>}
+            </div>}
               <div className="grid grid-cols-2 gap-3">
                 <div><label>Salary Min</label><input type="number" placeholder="100000" value={form.salaryMin} onChange={set('salaryMin')} /></div>
                 <div><label>Salary Max</label><input type="number" placeholder="150000" value={form.salaryMax} onChange={set('salaryMax')} /></div>

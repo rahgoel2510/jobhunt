@@ -10,6 +10,8 @@ export const INTERVIEW_MEDIUMS = ['Microsoft Teams', 'Zoom', 'Google Meet', 'Pho
 
 export const ROUND_TYPES = ['Recruiter Screen', 'Technical', 'System Design', 'Behavioral', 'Coding', 'Hiring Manager', 'Panel', 'Bar Raiser', 'Culture Fit', 'Final']
 
+export const ROUND_RESULTS = ['Scheduled', 'Completed', 'Move to Next Round', 'Selected', 'Rejected']
+
 export const GHOSTED_ELIGIBLE = ['Applied', 'Recruiter Screen Scheduled']
 export const DEFAULT_GHOSTED_DAYS = 21
 

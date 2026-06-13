@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { store } from '../../lib/store'
 import { exportApplicationPDF } from '../../lib/pdf'
-import { STATUSES, SOURCES, PROCESS_STAGES, INTERVIEW_MEDIUMS, ROUND_TYPES, getGlassdoorUrl, getLevelsFyiUrl } from '../../lib/constants'
+import { STATUSES, SOURCES, PROCESS_STAGES, INTERVIEW_MEDIUMS, ROUND_TYPES, ROUND_RESULTS, getGlassdoorUrl, getLevelsFyiUrl } from '../../lib/constants'
 import { format } from 'date-fns'
 import CompanyLogo from '../shared/CompanyLogo'
 
@@ -263,7 +263,7 @@ function RoundsUI({ rounds, expandedRound, setExpandedRound, roundForm, setRound
             <p className="font-medium">{r.type}<span className="text-muted font-normal">{r.medium ? ` · ${r.medium}` : ''}</span></p>
             <p className="text-sm text-muted">{r.date ? format(new Date(r.date), 'EEE, MMM d') : 'TBD'}{r.time ? ` at ${r.time}` : ''}{r.interviewer ? ` · ${r.interviewer}` : ''}</p>
           </div>
-          <span className={`text-xs font-bold px-2 py-1 rounded-full ${r.result==='Passed'?'bg-green-50 text-green-700':r.result==='Failed'?'bg-red-50 text-red-700':'bg-amber-50 text-amber-700'}`}>{r.result||'Pending'}</span>
+          <span className={`text-xs font-bold px-2 py-1 rounded-full ${r.result==='Selected'||r.result==='Move to Next Round'?'bg-green-50 text-green-700':r.result==='Rejected'?'bg-red-50 text-red-700':r.result==='Completed'?'bg-blue-50 text-blue-700':'bg-amber-50 text-amber-700'}`}>{r.result||'Scheduled'}</span>
           <span className="text-muted text-lg">{expandedRound===r.id?'▲':'▼'}</span>
         </div>
         {expandedRound === r.id && <div className="border-t border-border">
@@ -275,7 +275,7 @@ function RoundsUI({ rounds, expandedRound, setExpandedRound, roundForm, setRound
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <Field label="Interviewer"><input value={r.interviewer||''} onChange={e=>updateRound(r,{interviewer:e.target.value})} placeholder="Name (Role)" /></Field>
-              <Field label="Result"><select value={r.result||'Pending'} onChange={e=>updateRound(r,{result:e.target.value})}><option>Pending</option><option>Passed</option><option>Failed</option></select></Field>
+              <Field label="Result"><select value={r.result||'Scheduled'} onChange={e=>updateRound(r,{result:e.target.value})}>{ROUND_RESULTS.map(x=><option key={x}>{x}</option>)}</select></Field>
             </div>
           </div>
           <div className="p-4 border-t border-border bg-indigo-50/50">
@@ -304,6 +304,6 @@ function RoundsUI({ rounds, expandedRound, setExpandedRound, roundForm, setRound
       </div>
       <Field label="Interviewer"><input value={roundForm.interviewer} onChange={e=>setRoundForm(f=>({...f,interviewer:e.target.value}))} placeholder="Name (Role)" /></Field>
       <div className="flex gap-2"><button type="button" className="primary flex-1" onClick={saveRound}>Add Round</button><button type="button" onClick={()=>setRoundForm(null)}>Cancel</button></div>
-    </div> : <button type="button" onClick={()=>setRoundForm({type:defaultType,date:new Date().toISOString().slice(0,10),time:'10:00',medium:'Microsoft Teams',interviewer:'',result:'Pending'})} className="w-full border-2 border-dashed border-border text-muted py-4 hover:border-accent hover:text-accent rounded-lg text-sm">+ Add Interview Round</button>}
+    </div> : <button type="button" onClick={()=>setRoundForm({type:defaultType,date:new Date().toISOString().slice(0,10),time:'10:00',medium:'Microsoft Teams',interviewer:'',result:'Scheduled'})} className="w-full border-2 border-dashed border-border text-muted py-4 hover:border-accent hover:text-accent rounded-lg text-sm">+ Add Interview Round</button>}
   </div>
 }

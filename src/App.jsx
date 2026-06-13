@@ -3,7 +3,6 @@ import { AuthProvider, useAuth } from './components/auth/AuthContext'
 import LockScreen from './components/auth/LockScreen'
 import Dashboard from './components/dashboard/Dashboard'
 import Applications from './components/applications/Applications'
-import Retrospectives from './components/retrospectives/Retrospectives'
 import Resumes from './components/resumes/Resumes'
 import ExportImport from './components/shared/ExportImport'
 
@@ -26,10 +25,9 @@ function AppContent() {
   if (state !== 'unlocked') return <LockScreen />
 
   const tabs = [
-    { id: 'dashboard', label: 'Dashboard' },
-    { id: 'applications', label: 'Applications' },
-    { id: 'resumes', label: 'Resumes' },
-    { id: 'retro', label: 'Retrospectives' },
+    { id: 'dashboard', label: '📊 Dashboard' },
+    { id: 'applications', label: '💼 Applications' },
+    { id: 'resumes', label: '📄 Resumes' },
   ]
 
   return (
@@ -53,7 +51,6 @@ function AppContent() {
         {tab === 'dashboard' && <Dashboard onNavigate={t => { location.hash = t; setTab(t) }} />}
         {tab === 'applications' && <Applications />}
         {tab === 'resumes' && <Resumes />}
-        {tab === 'retro' && <Retrospectives />}
         {tab === 'export' && <ExportImport />}
       </main>
     </div>

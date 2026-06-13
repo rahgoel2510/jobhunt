@@ -248,6 +248,9 @@ export default function Dashboard({ onNavigate }) {
         </div>
       </div>
 
+      {/* ── Recent Learnings ── */}
+      {total > 0 && <RecentLearnings />}
+
       {/* ── Empty state ── */}
       {total === 0 && <div className="card text-center py-12">
         <p className="text-4xl mb-2">🚀</p>
@@ -255,6 +258,32 @@ export default function Dashboard({ onNavigate }) {
         <p className="text-xs text-muted mt-1 mb-3">Add your first application to see your pipeline come alive.</p>
         <button className="primary" onClick={() => onNavigate('applications')}>Add Application</button>
       </div>}
+    </div>
+  )
+}
+
+function RecentLearnings() {
+  const [rounds, setRounds] = useState([])
+  const [apps, setApps] = useState([])
+  useEffect(() => { store.getAll('interviewRounds').then(setRounds); store.getAll('applications').then(setApps) }, [])
+  const withRetros = rounds.filter(r => r.retro).sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0)).slice(0, 5)
+  if (withRetros.length === 0) return null
+  return (
+    <div className="card p-4">
+      <h3 className="text-xs font-bold mb-2">💡 Recent Learnings <span className="font-normal text-muted">— from your interview retros</span></h3>
+      <div className="space-y-2">
+        {withRetros.map(r => {
+          const app = apps.find(a => a.id === r.applicationId)
+          return <div key={r.id} className="bg-bg-secondary rounded-md p-2.5">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-xs font-semibold">{app?.company || '?'}</span>
+              <span className="text-[10px] text-muted">Round {r.roundNumber} · {r.type}</span>
+              {r.date && <span className="text-[10px] text-muted ml-auto">{format(new Date(r.date), 'MMM d')}</span>}
+            </div>
+            <p className="text-xs text-muted italic">"{r.retro.slice(0, 120)}{r.retro.length > 120 ? '...' : ''}"</p>
+          </div>
+        })}
+      </div>
     </div>
   )
 }

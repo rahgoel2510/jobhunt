@@ -69,7 +69,7 @@ export default function Applications() {
                 <TreeRow key={a.id} app={a} rounds={appRounds} isOpen={isOpen} days={days} toggle={() => toggle(a.id)} onEdit={() => setDrawerId(a.id)} />
               )
             })}
-            {filtered.length === 0 && <tr><td colSpan={7} className="text-center text-muted py-8 text-xs">No applications.</td></tr>}
+            {filtered.length === 0 && <tr><td colSpan={7} className="text-center py-12"><p className="text-3xl mb-2">💼</p><p className="font-medium">No applications yet</p><p className="text-sm text-muted mt-1">Click "+ Add" to start tracking your job hunt.</p></td></tr>}
           </tbody>
         </table>
       </div>

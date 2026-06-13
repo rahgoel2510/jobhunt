@@ -53,11 +53,11 @@ export default function Applications() {
             <tr>
               <th className="w-6"></th>
               <th>Company</th>
-              <th>Role</th>
+              <th className="hide-mobile">Role</th>
               <th>Status</th>
-              <th>Rounds</th>
-              <th>Applied</th>
-              <th>Days</th>
+              <th className="hide-mobile">Rounds</th>
+              <th className="hide-mobile">Applied</th>
+              <th className="hide-mobile">Days</th>
             </tr>
           </thead>
           <tbody>
@@ -91,16 +91,19 @@ function TreeRow({ app, rounds, isOpen, days, toggle, onEdit }) {
       <td className="!py-1.5 cursor-pointer" onClick={onEdit}>
         <div className="flex items-center gap-2">
           <CompanyLogo company={app.company} size={22} />
-          <span className="text-xs font-semibold group-hover:text-accent transition-colors">{app.company}</span>
+          <div>
+            <span className="text-xs font-semibold group-hover:text-accent transition-colors">{app.company}</span>
+            <span className="sm:hidden text-[11px] text-muted block">{app.role}</span>
+          </div>
         </div>
       </td>
-      <td className="!py-1.5 text-xs cursor-pointer" onClick={onEdit}>{app.role}</td>
+      <td className="!py-1.5 text-xs cursor-pointer hide-mobile" onClick={onEdit}>{app.role}</td>
       <td className="!py-1.5">
         <span className="text-xs font-bold px-1.5 py-0.5 rounded-full whitespace-nowrap" style={{ backgroundColor: (STATUS_COLORS[app.status] || '#94a3b8') + '18', color: STATUS_COLORS[app.status] || '#94a3b8' }}>{app.status}</span>
       </td>
-      <td className="!py-1.5 text-xs text-muted">{rounds.length || '—'}</td>
-      <td className="!py-1.5 text-xs text-muted">{app.dateApplied ? format(new Date(app.dateApplied), 'MMM d') : ''}</td>
-      <td className="!py-1.5 text-xs text-muted">{days}{days && 'd'}</td>
+      <td className="!py-1.5 text-xs text-muted hide-mobile">{rounds.length || '—'}</td>
+      <td className="!py-1.5 text-xs text-muted hide-mobile">{app.dateApplied ? format(new Date(app.dateApplied), 'MMM d') : ''}</td>
+      <td className="!py-1.5 text-xs text-muted hide-mobile">{days}{days && 'd'}</td>
     </tr>
 
     {/* Child rows (rounds) */}

@@ -16,7 +16,6 @@
   --color-warning: #f59e0b;
 }
 
-/* Dark theme */
 [data-theme="dark"] {
   --color-bg: #09090b;
   --color-bg-secondary: #18181b;
@@ -29,48 +28,45 @@
   --color-accent-light: #1e1b4b;
 }
 
-/* Base resets */
+/* Base */
 body {
   @apply bg-bg text-text-primary antialiased text-base leading-relaxed;
+  -webkit-tap-highlight-color: transparent;
 }
 
-/* Compact shadcn-style components */
+/* Buttons — touch-friendly min height */
 button, .btn {
-  @apply inline-flex items-center justify-center gap-1.5 rounded-md border border-border bg-bg-card px-3 py-2 text-sm font-medium text-text-primary transition-all duration-150 hover:bg-bg-secondary cursor-pointer;
+  @apply inline-flex items-center justify-center gap-1.5 rounded-lg border border-border bg-bg-card px-4 py-2.5 text-sm font-medium text-text-primary transition-all duration-150 hover:bg-bg-secondary cursor-pointer;
+  min-height: 44px;
 }
-button:active { @apply scale-[0.98]; }
-.btn-primary, button.primary {
-  @apply bg-accent text-white border-accent hover:bg-accent-hover shadow-sm shadow-accent/20;
-}
-.btn-danger, button.danger {
-  @apply bg-danger text-white border-danger hover:opacity-90;
-}
-.btn-ghost {
-  @apply border-transparent bg-transparent hover:bg-bg-secondary;
-}
+@media (min-width: 768px) { button, .btn { min-height: unset; @apply py-2 px-3; } }
+button:active { @apply scale-[0.97]; }
+button.primary { @apply bg-accent text-white border-accent hover:bg-accent-hover shadow-sm shadow-accent/20; }
+button.danger { @apply bg-danger text-white border-danger hover:opacity-90; }
 
+/* Inputs — 44px min touch target on mobile */
 input, textarea, select {
-  @apply w-full rounded-md border border-border bg-bg px-3 py-2 text-sm text-text-primary transition-colors placeholder:text-muted/60 focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent;
+  @apply w-full rounded-lg border border-border bg-bg px-3 py-3 text-base text-text-primary transition-colors placeholder:text-muted/60 focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent;
+  min-height: 44px;
 }
-label {
-  @apply block mb-1 text-xs font-semibold uppercase tracking-wide text-muted;
-}
+@media (min-width: 768px) { input, textarea, select { @apply py-2 text-sm rounded-md; min-height: unset; } }
+textarea { min-height: unset; }
+label { @apply block mb-1.5 text-xs font-semibold uppercase tracking-wide text-muted; }
 
-.card {
-  @apply bg-bg-card border border-border rounded-lg p-4 shadow-sm;
-}
+/* Cards */
+.card { @apply bg-bg-card border border-border rounded-xl p-4 shadow-sm; }
+@media (min-width: 768px) { .card { @apply rounded-lg; } }
 
 /* Tables */
 table { @apply w-full; }
 th { @apply text-left px-3 py-2.5 text-xs font-semibold uppercase tracking-wider text-muted border-b-2 border-border; }
-td { @apply px-3 py-2.5 text-sm border-b border-border; }
+td { @apply px-3 py-3 text-sm border-b border-border; }
+@media (min-width: 768px) { td { @apply py-2.5; } }
 tbody tr { @apply transition-colors hover:bg-accent-light cursor-pointer; }
 
-/* Badges */
-.badge {
-  @apply inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wide;
-  background: var(--color-accent-light);
-  color: var(--color-accent);
+/* Responsive table — hide columns on mobile */
+@media (max-width: 640px) {
+  .hide-mobile { display: none !important; }
 }
 
 /* Scrollbar */
@@ -80,6 +76,11 @@ tbody tr { @apply transition-colors hover:bg-accent-light cursor-pointer; }
 
 /* Lock screen */
 .lock-screen {
-  @apply min-h-screen flex items-center justify-center;
+  @apply min-h-screen flex items-center justify-center p-4;
   background: linear-gradient(135deg, var(--color-bg) 0%, var(--color-bg-secondary) 100%);
+}
+
+/* Safe area for mobile notch */
+@supports (padding: env(safe-area-inset-bottom)) {
+  .safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
 }

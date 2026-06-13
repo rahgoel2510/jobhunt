@@ -83,26 +83,37 @@ export default function ApplicationDrawer({ id, onClose, onSaved }) {
   return (
     <div className="fixed inset-0 z-[100] bg-bg flex flex-col">
       {/* Top bar */}
-      <div className="shrink-0 flex items-center justify-between px-6 py-3 border-b border-border bg-bg-card">
-        <div className="flex items-center gap-3">
-          <CompanyLogo company={form.company} size={32} />
-          <div>
-            <h1 className="font-bold">{form.company || 'New Application'} <span className="text-muted font-normal">· {form.role || 'Role'}</span></h1>
-            <p className="text-xs text-muted">{form.status}{form.source ? ` · ${form.source}` : ''}</p>
+      <div className="shrink-0 flex flex-wrap items-center justify-between px-4 md:px-6 py-3 border-b border-border bg-bg-card gap-2">
+        <div className="flex items-center gap-2 min-w-0">
+          <CompanyLogo company={form.company} size={28} />
+          <div className="min-w-0">
+            <h1 className="font-bold text-sm md:text-base truncate">{form.company || 'New Application'} <span className="text-muted font-normal">· {form.role || 'Role'}</span></h1>
+            <p className="text-xs text-muted truncate">{form.status}{form.source ? ` · ${form.source}` : ''}</p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          {form.statusHistory.length > 1 && <button type="button" onClick={undo} title="Undo last status change" className="text-sm px-3 border-amber-200 text-amber-700 hover:bg-amber-50">↩ Undo</button>}
-          <button type="button" className="primary px-4" onClick={save}>{id === 'new' ? '🚀 Create' : '💾 Save'}</button>
-          {id !== 'new' && <button type="button" onClick={() => exportApplicationPDF(id)} className="px-2">📄</button>}
-          {id !== 'new' && <button type="button" className="danger px-2" onClick={remove}>🗑</button>}
-          <button onClick={onClose} className="ml-2 w-8 h-8 rounded-full bg-bg-secondary text-muted hover:bg-border border-0">✕</button>
+        <div className="flex items-center gap-1.5">
+          {form.statusHistory.length > 1 && <button type="button" onClick={undo} title="Undo last status change" className="!min-h-0 !py-1.5 text-xs px-2 border-amber-200 text-amber-700 hover:bg-amber-50">↩</button>}
+          <button type="button" className="primary !min-h-0 !py-1.5 px-3 text-sm" onClick={save}>{id === 'new' ? '🚀 Create' : '💾 Save'}</button>
+          {id !== 'new' && <button type="button" onClick={() => exportApplicationPDF(id)} className="!min-h-0 !py-1.5 px-2">📄</button>}
+          {id !== 'new' && <button type="button" className="danger !min-h-0 !py-1.5 px-2" onClick={remove}>🗑</button>}
+          <button onClick={onClose} className="w-8 h-8 rounded-full bg-bg-secondary text-muted hover:bg-border border-0 !min-h-0 !p-0">✕</button>
         </div>
       </div>
 
+      {/* Mobile step tabs */}
+      <div className="md:hidden shrink-0 flex border-b border-border bg-bg-card overflow-x-auto">
+        {STEPS.map(step => (
+          <button key={step.id} type="button" onClick={() => setActiveStep(step.id)}
+            className={`flex-1 flex flex-col items-center gap-0.5 py-2 border-0 rounded-none !min-h-0 whitespace-nowrap ${activeStep === step.id ? 'text-accent border-b-2 border-b-accent' : 'text-muted'}`}>
+            <span className="text-base">{step.icon}</span>
+            <span className="text-[10px] font-medium">{step.label}</span>
+          </button>
+        ))}
+      </div>
+
       <div className="flex-1 flex overflow-hidden">
-        {/* Sidebar */}
-        <nav className="shrink-0 w-56 border-r border-border bg-bg-card p-4 space-y-1 overflow-y-auto">
+        {/* Sidebar — desktop only */}
+        <nav className="hidden md:flex shrink-0 w-56 border-r border-border bg-bg-card p-4 flex-col space-y-1 overflow-y-auto">
           {STEPS.map((step, i) => {
             const stepIdx = i
             const currentStepIdx = STEPS.findIndex(s => s.id === getStepForStatus(form.status))
@@ -146,17 +157,17 @@ export default function ApplicationDrawer({ id, onClose, onSaved }) {
         </nav>
 
         {/* Main content */}
-        <main className="flex-1 overflow-y-auto p-6">
+        <main className="flex-1 overflow-y-auto p-4 md:p-6">
           <div className="max-w-2xl mx-auto space-y-5">
 
             {/* ═══ STEP: APPLY ═══ */}
             {activeStep === 'apply' && <>
               <StepHeader title="📨 Application Details" desc="Fill in the basics. Which company, what role, where you found it, and which resume you're sending." />
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <Field label="Company *"><input required value={form.company} onChange={set('company')} placeholder="e.g. Google" /></Field>
                 <Field label="Role *"><input required value={form.role} onChange={set('role')} placeholder="e.g. Senior SDE" /></Field>
               </div>
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <Field label="Status"><select value={form.status} onChange={set('status')}>{STATUSES.map(s => <option key={s}>{s}</option>)}</select></Field>
                 <Field label="Source"><select value={form.source} onChange={set('source')}><option value="">—</option>{SOURCES.map(s => <option key={s}>{s}</option>)}</select></Field>
                 <Field label="Date Applied"><input type="date" value={form.dateApplied} onChange={set('dateApplied')} /></Field>
@@ -165,7 +176,7 @@ export default function ApplicationDrawer({ id, onClose, onSaved }) {
               <Field label="JD Text (paste if no link)">
                 <textarea rows={4} value={form.jdText || ''} onChange={set('jdText')} placeholder="Paste the full job description here if you received it via email or don't have a direct link..." />
               </Field>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <Field label="Contact Person"><input value={form.contactName} onChange={set('contactName')} placeholder="Recruiter / referral name" /></Field>
                 <Field label="Contact Email"><input value={form.contactEmail} onChange={set('contactEmail')} placeholder="recruiter@company.com" /></Field>
               </div>
@@ -194,7 +205,7 @@ export default function ApplicationDrawer({ id, onClose, onSaved }) {
                   {form.company&&form.role&&<><a href={getGlassdoorUrl(form.company,form.role)} target="_blank" rel="noopener" className="flex-1 text-center py-2 rounded-md bg-white text-green-700 border border-green-300 font-semibold no-underline hover:bg-green-100">Glassdoor</a><a href={getLevelsFyiUrl(form.company,form.role)} target="_blank" rel="noopener" className="flex-1 text-center py-2 rounded-md bg-white text-blue-700 border border-blue-300 font-semibold no-underline hover:bg-blue-100">Levels.fyi</a><a href={`https://www.ambitionbox.com/salaries/${encodeURIComponent(form.company.toLowerCase().replace(/\s+/g,'-'))}-salaries`} target="_blank" rel="noopener" className="flex-1 text-center py-2 rounded-md bg-white text-orange-700 border border-orange-300 font-semibold no-underline hover:bg-orange-100">AmbitionBox</a></>}
                 </div>
                 <Field label="Research Notes (range + source link)"><textarea rows={2} value={form.salaryResearch||''} onChange={set('salaryResearch')} placeholder="₹28-40 LPA (Glassdoor, 85 reports)&#10;$150-180K TC for L5 (Levels.fyi)" /></Field>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <Field label="Your Floor (min)"><input type="number" value={form.salaryMin} onChange={set('salaryMin')} placeholder="e.g. 2800000" /></Field>
                   <Field label="Your Target"><input type="number" value={form.salaryMax} onChange={set('salaryMax')} placeholder="e.g. 4000000" /></Field>
                 </div>
@@ -221,7 +232,7 @@ export default function ApplicationDrawer({ id, onClose, onSaved }) {
             {/* ═══ STEP: OFFER ═══ */}
             {activeStep === 'offer' && <>
               <StepHeader title="🎉 Offer & Negotiation" desc="Log the offer, track negotiation rounds, make your decision." />
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <Field label="Offered Base / Min"><input type="number" value={form.salaryMin} onChange={set('salaryMin')} /></Field>
                 <Field label="Total Comp"><input type="number" value={form.salaryMax} onChange={set('salaryMax')} /></Field>
               </div>
@@ -257,12 +268,12 @@ function RoundsUI({ rounds, expandedRound, setExpandedRound, roundForm, setRound
         </div>
         {expandedRound === r.id && <div className="border-t border-border">
           <div className="p-4 space-y-3">
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <Field label="Date"><input type="date" value={r.date||''} onChange={e=>updateRound(r,{date:e.target.value})} /></Field>
               <Field label="Time"><input type="time" value={r.time||''} onChange={e=>updateRound(r,{time:e.target.value})} /></Field>
               <Field label="Medium"><select value={r.medium||''} onChange={e=>updateRound(r,{medium:e.target.value})}><option value="">—</option>{INTERVIEW_MEDIUMS.map(m=><option key={m}>{m}</option>)}</select></Field>
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <Field label="Interviewer"><input value={r.interviewer||''} onChange={e=>updateRound(r,{interviewer:e.target.value})} placeholder="Name (Role)" /></Field>
               <Field label="Result"><select value={r.result||'Pending'} onChange={e=>updateRound(r,{result:e.target.value})}><option>Pending</option><option>Passed</option><option>Failed</option></select></Field>
             </div>
@@ -283,11 +294,11 @@ function RoundsUI({ rounds, expandedRound, setExpandedRound, roundForm, setRound
     ))}
     {roundForm ? <div className="rounded-lg border-2 border-accent/30 bg-accent/5 p-4 space-y-3">
       <p className="font-bold text-accent">New Round #{rounds.length+1}</p>
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <Field label="Type"><select value={roundForm.type} onChange={e=>setRoundForm(f=>({...f,type:e.target.value}))}>{ROUND_TYPES.map(t=><option key={t}>{t}</option>)}</select></Field>
         <Field label="Medium"><select value={roundForm.medium} onChange={e=>setRoundForm(f=>({...f,medium:e.target.value}))}>{INTERVIEW_MEDIUMS.map(m=><option key={m}>{m}</option>)}</select></Field>
       </div>
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <Field label="Date"><input type="date" value={roundForm.date} onChange={e=>setRoundForm(f=>({...f,date:e.target.value}))} /></Field>
         <Field label="Time"><input type="time" value={roundForm.time} onChange={e=>setRoundForm(f=>({...f,time:e.target.value}))} /></Field>
       </div>

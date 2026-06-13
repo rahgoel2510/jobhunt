@@ -61,7 +61,7 @@ export default function ApplicationDrawer({ id, onClose, onSaved }) {
   async function saveRound() { if (!roundForm) return; await store.add('interviewRounds', { ...roundForm, applicationId: id, roundNumber: rounds.length + 1 }); setRoundForm(null); loadRounds() }
   async function updateRound(round, updates) { await store.put('interviewRounds', { ...round, ...updates }); loadRounds() }
   async function deleteRound(rid) { if (confirm('Delete?')) { await store.delete('interviewRounds', rid); loadRounds() } }
-  async function uploadResume() { if (!resumeFile || !resumeName.trim()) return; const reader = new FileReader(); reader.onload = async () => { await store.add('resumes', { name: resumeName.trim(), category: resumeCategory, fileName: resumeFile.name, type: resumeFile.type, data: reader.result, linkedApps: id !== 'new' ? [id] : [], createdAt: new Date().toISOString() }); setResumes(await store.getAll('resumes')); setResumeFile(null); setResumeName('') }; reader.readAsDataURL(resumeFile) }
+  async function uploadResume() { if (!resumeFile || !resumeName.trim()) return; const reader = new FileReader(); reader.onload = async () => { const tags = [form.company, form.role, ...form.tags].filter(Boolean); await store.add('resumes', { name: resumeName.trim(), category: resumeCategory, fileName: resumeFile.name, type: resumeFile.type, data: reader.result, linkedApps: id !== 'new' ? [id] : [], tags, createdAt: new Date().toISOString() }); setResumes(await store.getAll('resumes')); setResumeFile(null); setResumeName('') }; reader.readAsDataURL(resumeFile) }
   async function toggleResume(rid) { const r = resumes.find(x => x.id === rid); const l = r.linkedApps || []; await store.put('resumes', { ...r, linkedApps: l.includes(id) ? l.filter(x => x !== id) : [...l, id] }); setResumes(await store.getAll('resumes')) }
   function addTag() { const t = tagInput.trim(); if (t && !form.tags.includes(t)) setForm(f => ({ ...f, tags: [...f.tags, t] })); setTagInput('') }
 
@@ -275,7 +275,17 @@ function RoundsUI({ rounds, expandedRound, setExpandedRound, roundForm, setRound
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <Field label="Interviewer"><input value={r.interviewer||''} onChange={e=>updateRound(r,{interviewer:e.target.value})} placeholder="Name (Role)" /></Field>
-              <Field label="Result"><select value={r.result||'Scheduled'} onChange={e=>updateRound(r,{result:e.target.value})}>{ROUND_RESULTS.map(x=><option key={x}>{x}</option>)}</select></Field>
+              <Field label="Result">
+                <select value={r.result||'Scheduled'} onChange={e=>updateRound(r,{result:e.target.value})}>{ROUND_RESULTS.map(x=><option key={x}>{x}</option>)}</select>
+                <p className="text-[11px] text-muted mt-1 italic">
+                  {r.result === 'Scheduled' && '⏳ Round is booked, hasn\'t happened yet'}
+                  {r.result === 'Completed' && '✅ Done, awaiting feedback from interviewer'}
+                  {r.result === 'Move to Next Round' && '🎉 Passed! Advancing to the next round'}
+                  {r.result === 'Selected' && '🏆 Final selection — you got the offer!'}
+                  {r.result === 'Rejected' && '❌ Didn\'t make it past this round'}
+                  {!r.result && '⏳ Round is booked, hasn\'t happened yet'}
+                </p>
+              </Field>
             </div>
           </div>
           <div className="p-4 border-t border-border bg-indigo-50/50">

@@ -92,6 +92,7 @@ export default function Resumes() {
                 <div>
                   <strong className="text-xs">{r.name}</strong>
                   <p className="text-[10px] text-muted">{r.fileName}</p>
+                  {r.tags && r.tags.length > 0 && <div className="flex flex-wrap gap-1 mt-1">{r.tags.map(t => <span key={t} className="text-[9px] px-1.5 py-0.5 rounded-full bg-accent/10 text-accent">{t}</span>)}</div>}
                 </div>
               </div>
               <div className="flex gap-1">

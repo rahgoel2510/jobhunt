@@ -61,7 +61,7 @@ export default function ApplicationDrawer({ id, onClose, onSaved }) {
   async function saveRound() { if (!roundForm) return; await store.add('interviewRounds', { ...roundForm, applicationId: id, roundNumber: rounds.length + 1 }); setRoundForm(null); loadRounds() }
   async function updateRound(round, updates) { await store.put('interviewRounds', { ...round, ...updates }); loadRounds() }
   async function deleteRound(rid) { if (confirm('Delete?')) { await store.delete('interviewRounds', rid); loadRounds() } }
-  async function uploadResume() { if (!resumeFile || !resumeName.trim()) return; const reader = new FileReader(); reader.onload = async () => { const tags = [form.company, form.role, ...form.tags].filter(Boolean); await store.add('resumes', { name: resumeName.trim(), category: resumeCategory, fileName: resumeFile.name, type: resumeFile.type, data: reader.result, linkedApps: id !== 'new' ? [id] : [], tags, createdAt: new Date().toISOString() }); setResumes(await store.getAll('resumes')); setResumeFile(null); setResumeName('') }; reader.readAsDataURL(resumeFile) }
+  async function uploadResume() { if (!resumeFile) return; const reader = new FileReader(); reader.onload = async () => { const autoName = `${form.company || 'Resume'} - ${resumeFile.name.replace(/\.(pdf|docx?)$/i,'')}`; const tags = [form.company, form.role, ...form.tags].filter(Boolean); await store.add('resumes', { name: autoName, category: resumeCategory, fileName: resumeFile.name, type: resumeFile.type, data: reader.result, linkedApps: id !== 'new' ? [id] : [], tags, createdAt: new Date().toISOString() }); setResumes(await store.getAll('resumes')); setResumeFile(null) }; reader.readAsDataURL(resumeFile) }
   async function toggleResume(rid) { const r = resumes.find(x => x.id === rid); const l = r.linkedApps || []; await store.put('resumes', { ...r, linkedApps: l.includes(id) ? l.filter(x => x !== id) : [...l, id] }); setResumes(await store.getAll('resumes')) }
   function addTag() { const t = tagInput.trim(); if (t && !form.tags.includes(t)) setForm(f => ({ ...f, tags: [...f.tags, t] })); setTagInput('') }
 
@@ -204,16 +204,11 @@ export default function ApplicationDrawer({ id, onClose, onSaved }) {
               <div className="border-t border-border pt-2 mt-2">
                 <p className="text-xs text-muted mb-1.5">Upload new:</p>
                 <div className="flex flex-col sm:flex-row gap-2">
-                  <input placeholder="Name (e.g. TPM-v3-AWS)" value={resumeName} onChange={e=>setResumeName(e.target.value)} className="flex-1" />
-                  <select value={resumeCategory} onChange={e=>setResumeCategory(e.target.value)} className="sm:w-24"><option>General</option><option>Tailored</option></select>
-                </div>
-                <div className="flex items-center gap-2 mt-2">
-                  <button type="button" onClick={()=>fileRef.current?.click()} className="flex-1 border-dashed text-left">{resumeFile ? `📎 ${resumeFile.name}` : '📁 Choose PDF or DOCX file'}</button>
+                  <button type="button" onClick={()=>fileRef.current?.click()} className="flex-1 border-dashed text-left">{resumeFile ? `📎 ${resumeFile.name}` : '📁 Choose your resume (PDF or DOCX)'}</button>
                   <input ref={fileRef} type="file" accept=".pdf,.docx" className="hidden" onChange={e=>setResumeFile(e.target.files[0])} />
+                  <select value={resumeCategory} onChange={e=>setResumeCategory(e.target.value)} className="sm:w-28"><option>General</option><option>Tailored</option></select>
                 </div>
-                <button type="button" className={`w-full mt-2 ${resumeFile && resumeName ? 'primary' : 'opacity-50 cursor-not-allowed bg-bg-secondary border-border text-muted'}`} onClick={uploadResume} disabled={!resumeFile || !resumeName}>
-                  {!resumeFile && !resumeName ? '↑ Pick a file and give it a name' : !resumeName ? '↑ Enter a name for this resume' : !resumeFile ? '↑ Choose a file' : `↑ Upload "${resumeName}"`}
-                </button>
+                {resumeFile && <button type="button" className="primary w-full mt-2" onClick={uploadResume}>↑ Upload & Link to this application</button>}
               </div>
             </div>}
 

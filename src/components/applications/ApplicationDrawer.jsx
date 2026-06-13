@@ -61,7 +61,25 @@ export default function ApplicationDrawer({ id, onClose, onSaved }) {
   async function saveRound() { if (!roundForm) return; await store.add('interviewRounds', { ...roundForm, applicationId: id, roundNumber: rounds.length + 1 }); setRoundForm(null); loadRounds() }
   async function updateRound(round, updates) { await store.put('interviewRounds', { ...round, ...updates }); loadRounds() }
   async function deleteRound(rid) { if (confirm('Delete?')) { await store.delete('interviewRounds', rid); loadRounds() } }
-  async function uploadResume() { if (!resumeFile) return; const reader = new FileReader(); reader.onload = async () => { const autoName = `${form.company || 'Resume'} - ${resumeFile.name.replace(/\.(pdf|docx?)$/i,'')}`; const tags = [form.company, form.role, ...form.tags].filter(Boolean); await store.add('resumes', { name: autoName, category: resumeCategory, fileName: resumeFile.name, type: resumeFile.type, data: reader.result, linkedApps: id !== 'new' ? [id] : [], tags, createdAt: new Date().toISOString() }); setResumes(await store.getAll('resumes')); setResumeFile(null) }; reader.readAsDataURL(resumeFile) }
+  const [uploadError, setUploadError] = useState('')
+
+  async function uploadResume() {
+    if (!resumeFile) return
+    setUploadError('')
+    if (resumeFile.size > 700000) { setUploadError(`File too large (${(resumeFile.size/1024/1024).toFixed(1)}MB). Max 700KB for cloud storage. Compress your PDF or use a smaller file.`); return }
+    const reader = new FileReader()
+    reader.onload = async () => {
+      try {
+        const autoName = `${form.company || 'Resume'} - ${resumeFile.name.replace(/\.(pdf|docx?)$/i,'')}`
+        const tags = [form.company, form.role, ...form.tags].filter(Boolean)
+        await store.add('resumes', { name: autoName, category: resumeCategory, fileName: resumeFile.name, type: resumeFile.type, data: reader.result, linkedApps: id !== 'new' ? [id] : [], tags, createdAt: new Date().toISOString() })
+        setResumes(await store.getAll('resumes'))
+        setResumeFile(null)
+        setUploadError('')
+      } catch (e) { setUploadError(`Upload failed: ${e.message}`) }
+    }
+    reader.readAsDataURL(resumeFile)
+  }
   async function toggleResume(rid) { const r = resumes.find(x => x.id === rid); const l = r.linkedApps || []; await store.put('resumes', { ...r, linkedApps: l.includes(id) ? l.filter(x => x !== id) : [...l, id] }); setResumes(await store.getAll('resumes')) }
   function addTag() { const t = tagInput.trim(); if (t && !form.tags.includes(t)) setForm(f => ({ ...f, tags: [...f.tags, t] })); setTagInput('') }
 
@@ -208,7 +226,11 @@ export default function ApplicationDrawer({ id, onClose, onSaved }) {
                   <input ref={fileRef} type="file" accept=".pdf,.docx" className="hidden" onChange={e=>setResumeFile(e.target.files[0])} />
                   <select value={resumeCategory} onChange={e=>setResumeCategory(e.target.value)} className="sm:w-28"><option>General</option><option>Tailored</option></select>
                 </div>
-                {resumeFile && <button type="button" className="primary w-full mt-2" onClick={uploadResume}>↑ Upload & Link to this application</button>}
+                {resumeFile && <div className="mt-2 space-y-1.5">
+                  <p className="text-xs text-muted">Size: {(resumeFile.size/1024).toFixed(0)}KB {resumeFile.size > 700000 ? '⚠️ Too large!' : '✓'}</p>
+                  <button type="button" className="primary w-full" onClick={uploadResume}>↑ Upload & Link to this application</button>
+                </div>}
+                {uploadError && <p className="text-xs text-danger mt-1.5 bg-red-50 rounded-md p-2">{uploadError}</p>}
               </div>
             </div>}
 

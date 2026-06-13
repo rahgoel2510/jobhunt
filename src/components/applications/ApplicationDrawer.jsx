@@ -200,7 +200,17 @@ export default function ApplicationDrawer({ id, onClose, onSaved }) {
                 {id!=='new'&&availableResumes.length>0&&<div><p className="text-xs text-muted mb-1">Or link an existing resume:</p><div className="flex flex-wrap gap-1.5">{availableResumes.map(r=><button key={r.id} type="button" onClick={()=>toggleResume(r.id)} className="text-xs px-2 py-1 rounded-md bg-bg-card border border-border hover:border-accent hover:text-accent">+ {r.name}</button>)}</div></div>}
                 <div className="border-t border-border pt-2 mt-2">
                   <p className="text-xs text-muted mb-1.5">Upload new resume (auto-links to this application):</p>
-                  <div className="flex gap-2 items-center"><input placeholder="Name (e.g. TPM-v3-AWS)" value={resumeName} onChange={e=>setResumeName(e.target.value)} className="flex-1" /><select value={resumeCategory} onChange={e=>setResumeCategory(e.target.value)} className="w-24"><option>General</option><option>Tailored</option></select><button type="button" onClick={()=>fileRef.current?.click()} className="px-2 shrink-0">{resumeFile?'📎 '+resumeFile.name.slice(0,12):'📁 File'}</button><input ref={fileRef} type="file" accept=".pdf,.docx" className="hidden" onChange={e=>setResumeFile(e.target.files[0])} />{resumeFile&&resumeName&&<button type="button" className="primary px-3 shrink-0" onClick={uploadResume}>Upload</button>}</div>
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <input placeholder="Name (e.g. TPM-v3-AWS)" value={resumeName} onChange={e=>setResumeName(e.target.value)} className="flex-1" />
+                    <select value={resumeCategory} onChange={e=>setResumeCategory(e.target.value)} className="sm:w-24"><option>General</option><option>Tailored</option></select>
+                  </div>
+                  <div className="flex items-center gap-2 mt-2">
+                    <button type="button" onClick={()=>fileRef.current?.click()} className="flex-1 border-dashed text-left">{resumeFile ? `📎 ${resumeFile.name}` : '📁 Choose PDF or DOCX file'}</button>
+                    <input ref={fileRef} type="file" accept=".pdf,.docx" className="hidden" onChange={e=>setResumeFile(e.target.files[0])} />
+                  </div>
+                  <button type="button" className={`w-full mt-2 ${resumeFile && resumeName ? 'primary' : 'opacity-50 cursor-not-allowed bg-bg-secondary border-border text-muted'}`} onClick={uploadResume} disabled={!resumeFile || !resumeName}>
+                    {!resumeFile && !resumeName ? '↑ Pick a file and give it a name to upload' : !resumeName ? '↑ Enter a name for this resume' : !resumeFile ? '↑ Choose a file to upload' : `↑ Upload "${resumeName}"`}
+                  </button>
                 </div>
               </div>
             </>}

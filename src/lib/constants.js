@@ -4,7 +4,7 @@ export const STATUSES = [
   'Offer', 'Offer Negotiation', 'Accepted', 'Rejected', 'Withdrawn', 'Ghosted'
 ]
 
-export const SOURCES = ['Cold Application', 'Referral', 'Recruiter Outreach', 'Network/Warm Intro']
+export const SOURCES = ['Cold Application', 'Referral', 'Recruiter Outreach', 'Job Consultancy', 'Network/Warm Intro']
 
 export const INTERVIEW_MEDIUMS = ['Microsoft Teams', 'Zoom', 'Google Meet', 'Phone', 'In-Person', 'Custom']
 

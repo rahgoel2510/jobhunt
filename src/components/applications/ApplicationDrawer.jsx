@@ -4,12 +4,19 @@ import { exportApplicationPDF } from '../../lib/pdf'
 import { STATUSES, SOURCES, PROCESS_STAGES, INTERVIEW_MEDIUMS, ROUND_TYPES, getGlassdoorUrl, getLevelsFyiUrl } from '../../lib/constants'
 import { format } from 'date-fns'
 import CompanyLogo from '../shared/CompanyLogo'
-import { HelpDot } from '../shared/Tooltip'
 
 const emptyApp = { company: '', role: '', jdLink: '', jdText: '', dateApplied: new Date().toISOString().slice(0, 10), status: 'Wishlist', source: '', contactName: '', contactEmail: '', salaryMin: '', salaryMax: '', salaryResearch: '', generalPrep: '', notes: '', tags: [], statusHistory: [] }
 
+const STEPS = [
+  { id: 'apply', label: 'Apply', icon: '📨', desc: 'Company, role, JD, resume' },
+  { id: 'screen', label: 'Screening', icon: '📞', desc: 'Salary research, recruiter call' },
+  { id: 'interview', label: 'Interviews', icon: '🎯', desc: 'Rounds, prep, retros' },
+  { id: 'offer', label: 'Offer', icon: '🎉', desc: 'Comp, negotiation' },
+]
+
 export default function ApplicationDrawer({ id, onClose, onSaved }) {
   const [form, setForm] = useState(emptyApp)
+  const [activeStep, setActiveStep] = useState('apply')
   const [rounds, setRounds] = useState([])
   const [roundForm, setRoundForm] = useState(null)
   const [expandedRound, setExpandedRound] = useState(null)
@@ -17,13 +24,21 @@ export default function ApplicationDrawer({ id, onClose, onSaved }) {
   const [resumeFile, setResumeFile] = useState(null)
   const [resumeName, setResumeName] = useState('')
   const [resumeCategory, setResumeCategory] = useState('General')
-  const [showMore, setShowMore] = useState(null) // collapsed section key
+  const [tagInput, setTagInput] = useState('')
   const fileRef = useRef()
 
   useEffect(() => {
-    if (id !== 'new') { store.get('applications', id).then(a => a && setForm({ ...emptyApp, ...a, statusHistory: a.statusHistory || [] })); loadRounds() }
+    if (id !== 'new') { store.get('applications', id).then(a => { if (a) { setForm({ ...emptyApp, ...a, statusHistory: a.statusHistory || [] }); setActiveStep(getStepForStatus(a.status)) } }); loadRounds() }
     store.getAll('resumes').then(setResumes)
   }, [id])
+
+  function getStepForStatus(status) {
+    const idx = ['Wishlist','Applied','Recruiter Screen Scheduled','Recruiter Screen Done','Interview Scheduled','Interview In Progress','Offer','Offer Negotiation','Accepted'].indexOf(status)
+    if (idx <= 1) return 'apply'
+    if (idx <= 3) return 'screen'
+    if (idx <= 5) return 'interview'
+    return 'offer'
+  }
 
   async function loadRounds() {
     const all = await store.getAll('interviewRounds')
@@ -31,14 +46,33 @@ export default function ApplicationDrawer({ id, onClose, onSaved }) {
   }
 
   function set(f) { return e => setForm(x => ({ ...x, [f]: e.target.value })) }
-  function advanceTo(toStatus) { setForm(f => ({ ...f, status: toStatus, statusHistory: [...f.statusHistory, { fromStatus: f.status, toStatus, timestamp: new Date().toISOString() }] })) }
+
+  function advanceTo(toStatus) {
+    setForm(f => ({ ...f, status: toStatus, statusHistory: [...f.statusHistory, { fromStatus: f.status, toStatus, timestamp: new Date().toISOString() }] }))
+    setActiveStep(getStepForStatus(toStatus))
+  }
+
+  function undo() {
+    if (form.statusHistory.length <= 1) return
+    const prev = form.statusHistory[form.statusHistory.length - 2]
+    setForm(f => ({ ...f, status: prev.toStatus, statusHistory: f.statusHistory.slice(0, -1) }))
+  }
+
   async function saveRound() { if (!roundForm) return; await store.add('interviewRounds', { ...roundForm, applicationId: id, roundNumber: rounds.length + 1 }); setRoundForm(null); loadRounds() }
   async function updateRound(round, updates) { await store.put('interviewRounds', { ...round, ...updates }); loadRounds() }
   async function deleteRound(rid) { if (confirm('Delete?')) { await store.delete('interviewRounds', rid); loadRounds() } }
   async function uploadResume() { if (!resumeFile || !resumeName.trim()) return; const reader = new FileReader(); reader.onload = async () => { await store.add('resumes', { name: resumeName.trim(), category: resumeCategory, fileName: resumeFile.name, type: resumeFile.type, data: reader.result, linkedApps: id !== 'new' ? [id] : [], createdAt: new Date().toISOString() }); setResumes(await store.getAll('resumes')); setResumeFile(null); setResumeName('') }; reader.readAsDataURL(resumeFile) }
   async function toggleResume(rid) { const r = resumes.find(x => x.id === rid); const l = r.linkedApps || []; await store.put('resumes', { ...r, linkedApps: l.includes(id) ? l.filter(x => x !== id) : [...l, id] }); setResumes(await store.getAll('resumes')) }
-  async function save() { const rec = { ...form, salaryMin: Number(form.salaryMin) || null, salaryMax: Number(form.salaryMax) || null }; if (id === 'new') { if (!rec.statusHistory.length) rec.statusHistory = [{ fromStatus: null, toStatus: rec.status, timestamp: new Date().toISOString() }]; await store.add('applications', rec) } else await store.put('applications', rec); onSaved() }
-  async function remove() { if (confirm('Delete this application?')) { await store.delete('applications', id); onSaved() } }
+  function addTag() { const t = tagInput.trim(); if (t && !form.tags.includes(t)) setForm(f => ({ ...f, tags: [...f.tags, t] })); setTagInput('') }
+
+  async function save() {
+    const rec = { ...form, salaryMin: Number(form.salaryMin) || null, salaryMax: Number(form.salaryMax) || null }
+    if (id === 'new') { if (!rec.statusHistory.length) rec.statusHistory = [{ fromStatus: null, toStatus: rec.status, timestamp: new Date().toISOString() }]; await store.add('applications', rec) }
+    else await store.put('applications', rec)
+    onSaved()
+  }
+
+  async function remove() { if (confirm('Delete this application permanently?')) { await store.delete('applications', id); onSaved() } }
 
   const stageOrder = ['Wishlist', 'Applied', 'Recruiter Screen Scheduled', 'Recruiter Screen Done', 'Interview Scheduled', 'Interview In Progress', 'Offer', 'Accepted']
   const currentIdx = stageOrder.indexOf(form.status)
@@ -46,196 +80,204 @@ export default function ApplicationDrawer({ id, onClose, onSaved }) {
   const linkedResumes = resumes.filter(r => (r.linkedApps || []).includes(id))
   const availableResumes = resumes.filter(r => !(r.linkedApps || []).includes(id))
 
-  // What to show based on current stage
-  const stage = currentIdx <= 1 ? 'apply' : currentIdx <= 3 ? 'screen' : currentIdx <= 5 ? 'interview' : 'offer'
-
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" onClick={onClose}>
-      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
-      <div className="relative w-full max-w-3xl max-h-[90vh] bg-bg-card shadow-2xl rounded-xl flex flex-col animate-[fadeIn_0.15s_ease]" onClick={e => e.stopPropagation()}>
-
-        {/* Header */}
-        <div className="shrink-0 px-6 pt-5 pb-4 border-b border-border">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-3">
-              <CompanyLogo company={form.company} size={44} />
-              <div>
-                <h2 className="text-lg font-bold">{form.company || 'New Application'}</h2>
-                <p className="text-sm text-muted">{form.role || 'Role'}{form.source ? ` · ${form.source}` : ''}</p>
-              </div>
-            </div>
-            <button onClick={onClose} className="w-8 h-8 rounded-full border-0 bg-bg-secondary text-muted hover:bg-border">✕</button>
+    <div className="fixed inset-0 z-[100] bg-bg flex flex-col">
+      {/* Top bar */}
+      <div className="shrink-0 flex items-center justify-between px-6 py-3 border-b border-border bg-bg-card">
+        <div className="flex items-center gap-3">
+          <CompanyLogo company={form.company} size={32} />
+          <div>
+            <h1 className="font-bold">{form.company || 'New Application'} <span className="text-muted font-normal">· {form.role || 'Role'}</span></h1>
+            <p className="text-xs text-muted">{form.status}{form.source ? ` · ${form.source}` : ''}</p>
           </div>
-          {/* Stepper */}
-          {id !== 'new' && <div className="flex items-center">
-            {PROCESS_STAGES.map((s, i) => {
-              const reached = currentIdx >= i
-              const isCurrent = stageOrder[currentIdx] === s.status || (s.status === 'Interview Scheduled' && form.status === 'Interview In Progress')
-              return <div key={s.status} className="flex-1 flex flex-col items-center relative">
-                {i > 0 && <div className={`absolute top-4 right-1/2 w-full h-0.5 -z-0 ${reached ? 'bg-accent' : 'bg-border'}`} />}
-                <div className={`relative z-10 w-8 h-8 rounded-full flex items-center justify-center text-base transition-all ${isCurrent ? 'bg-accent text-white shadow-md shadow-accent/30 ring-4 ring-accent/20 scale-110' : reached ? 'bg-accent text-white' : 'bg-bg-secondary text-muted border-2 border-border'}`}>{s.icon}</div>
-                <span className={`text-[11px] mt-1.5 font-medium ${isCurrent ? 'text-accent font-bold' : reached ? 'text-text-primary' : 'text-muted'}`}>{s.label}</span>
-              </div>
-            })}
-          </div>}
-          {isTerminal && <div className="mt-2 text-center"><span className="font-bold px-3 py-1 rounded-full bg-red-50 text-red-600 border border-red-200">{form.status}</span></div>}
         </div>
-
-        {/* Body — only show current stage content */}
-        <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
-
-          {/* Advance */}
-          {id !== 'new' && !isTerminal && currentIdx < stageOrder.length - 1 && <div className="flex gap-2 items-center">
-            <button type="button" className="primary flex-1 py-2" onClick={() => advanceTo(stageOrder[currentIdx + 1])}>→ {stageOrder[currentIdx + 1]}</button>
-            <button type="button" className="text-xs border-red-200 text-red-600 hover:bg-red-50 px-3 py-2" onClick={() => advanceTo('Rejected')}>Reject</button>
-            {currentIdx < 3 ? <button type="button" className="text-xs border-orange-200 text-orange-600 hover:bg-orange-50 px-3 py-2" onClick={() => advanceTo('Ghosted')}>Ghost</button>
-              : <button type="button" className="text-xs border-gray-200 text-gray-600 hover:bg-gray-50 px-3 py-2" onClick={() => advanceTo('Withdrawn')}>Withdraw</button>}
-          </div>}
-
-          {/* ═══ STAGE: Apply ═══ */}
-          {(id === 'new' || stage === 'apply') && <div className="space-y-3">
-            <SectionHead title="📋 Application Details" />
-            <div className="grid grid-cols-2 gap-3">
-              <Field label="Company" required><input required value={form.company} onChange={set('company')} placeholder="e.g. Google" /></Field>
-              <Field label="Role" required><input required value={form.role} onChange={set('role')} placeholder="e.g. Senior SDE" /></Field>
-            </div>
-            <div className="grid grid-cols-3 gap-3">
-              <Field label="Status"><select value={form.status} onChange={set('status')}>{STATUSES.map(s => <option key={s}>{s}</option>)}</select></Field>
-              <Field label="Source"><select value={form.source} onChange={set('source')}><option value="">—</option>{SOURCES.map(s => <option key={s}>{s}</option>)}</select></Field>
-              <Field label="Date"><input type="date" value={form.dateApplied} onChange={set('dateApplied')} /></Field>
-            </div>
-            <Field label="JD Link"><input value={form.jdLink} onChange={set('jdLink')} placeholder="https://..." /></Field>
-            <div className="grid grid-cols-2 gap-3">
-              <Field label="Contact"><input value={form.contactName} onChange={set('contactName')} placeholder="Recruiter name" /></Field>
-              <Field label="Email"><input value={form.contactEmail} onChange={set('contactEmail')} /></Field>
-            </div>
-            <Field label="Notes"><textarea rows={2} value={form.notes} onChange={set('notes')} placeholder="Why this role? Red flags?" /></Field>
-            {/* Resume */}
-            <div className="bg-bg-secondary rounded-lg p-3 space-y-2">
-              <span className="text-sm font-semibold">📄 Resume used</span>
-              {linkedResumes.map(r => <div key={r.id} className="flex items-center gap-2 bg-bg-card rounded-md p-2"><span className={`text-xs px-1.5 py-0.5 rounded font-bold ${r.category==='Tailored'?'bg-purple-50 text-purple-700':'bg-sky-50 text-sky-700'}`}>{r.category==='Tailored'?'🎯':'📋'}</span><span className="flex-1 truncate">{r.name}</span>{id!=='new'&&<button type="button" onClick={()=>toggleResume(r.id)} className="text-xs text-danger border-0 bg-transparent">✕</button>}</div>)}
-              {id!=='new'&&availableResumes.length>0&&<div className="flex flex-wrap gap-1.5">{availableResumes.map(r=><button key={r.id} type="button" onClick={()=>toggleResume(r.id)} className="text-xs px-2 py-1 rounded-md bg-bg-card border border-border hover:border-accent hover:text-accent">+ {r.name}</button>)}</div>}
-              <div className="flex gap-2 items-center"><input placeholder="New resume name" value={resumeName} onChange={e=>setResumeName(e.target.value)} className="flex-1" /><select value={resumeCategory} onChange={e=>setResumeCategory(e.target.value)} className="w-24"><option>General</option><option>Tailored</option></select><button type="button" onClick={()=>fileRef.current?.click()} className="px-2">{resumeFile?'📎':'📁'}</button><input ref={fileRef} type="file" accept=".pdf,.docx" className="hidden" onChange={e=>setResumeFile(e.target.files[0])} />{resumeFile&&resumeName&&<button type="button" className="primary px-3" onClick={uploadResume}>Upload</button>}</div>
-            </div>
-          </div>}
-
-          {/* ═══ STAGE: Screening ═══ */}
-          {stage === 'screen' && <div className="space-y-4">
-            <SectionHead title="💰 Salary Research" subtitle="Research now — the recruiter WILL ask your expectations." />
-            <div className="flex gap-2">
-              {form.company&&form.role&&<><a href={getGlassdoorUrl(form.company,form.role)} target="_blank" rel="noopener" className="flex-1 text-center py-2 rounded-md bg-green-50 text-green-700 border border-green-200 font-semibold no-underline hover:bg-green-100">🔍 Glassdoor</a><a href={getLevelsFyiUrl(form.company,form.role)} target="_blank" rel="noopener" className="flex-1 text-center py-2 rounded-md bg-blue-50 text-blue-700 border border-blue-200 font-semibold no-underline hover:bg-blue-100">📊 Levels.fyi</a><a href={`https://www.ambitionbox.com/salaries/${encodeURIComponent(form.company.toLowerCase().replace(/\s+/g,'-'))}-salaries`} target="_blank" rel="noopener" className="flex-1 text-center py-2 rounded-md bg-orange-50 text-orange-700 border border-orange-200 font-semibold no-underline hover:bg-orange-100">📈 AmbitionBox</a></>}
-            </div>
-            <Field label="Research Notes"><textarea rows={2} value={form.salaryResearch||''} onChange={set('salaryResearch')} placeholder="₹28-40 LPA (Glassdoor)... $150-180K TC (Levels.fyi L5)..." /></Field>
-            <div className="grid grid-cols-2 gap-3">
-              <Field label="Your Floor (min you'd accept)"><input type="number" value={form.salaryMin} onChange={set('salaryMin')} /></Field>
-              <Field label="Your Target (ask for this)"><input type="number" value={form.salaryMax} onChange={set('salaryMax')} /></Field>
-            </div>
-
-            <SectionHead title="📞 Recruiter Screen" subtitle="Add the screen as Round 1 below, then fill retro after the call." />
-            <RoundsView rounds={rounds} expandedRound={expandedRound} setExpandedRound={setExpandedRound} roundForm={roundForm} setRoundForm={setRoundForm} saveRound={saveRound} updateRound={updateRound} deleteRound={deleteRound} defaultType="Recruiter Screen" />
-          </div>}
-
-          {/* ═══ STAGE: Interview ═══ */}
-          {stage === 'interview' && <div className="space-y-4">
-            <SectionHead title="📚 General Prep" subtitle="Applies to ALL rounds. Fill once, review before each." />
-            <textarea rows={4} value={form.generalPrep||''} onChange={set('generalPrep')} placeholder="• Company: what they do, news&#10;• Your pitch: 30-sec why you&#10;• Key stories: 3-4 STAR examples&#10;• Projects to highlight&#10;• Questions for them" />
-
-            <SectionHead title={`🎯 Interview Rounds (${rounds.length})`} subtitle="Prep before → Interview → Retro after. Repeat." />
-            <RoundsView rounds={rounds} expandedRound={expandedRound} setExpandedRound={setExpandedRound} roundForm={roundForm} setRoundForm={setRoundForm} saveRound={saveRound} updateRound={updateRound} deleteRound={deleteRound} defaultType="Technical" />
-          </div>}
-
-          {/* ═══ STAGE: Offer ═══ */}
-          {stage === 'offer' && <div className="space-y-4">
-            <SectionHead title="🎉 Offer" subtitle="Log comp, equity, deadline. Track negotiation below." />
-            <div className="grid grid-cols-2 gap-3">
-              <Field label="Offered Min / Base"><input type="number" value={form.salaryMin} onChange={set('salaryMin')} /></Field>
-              <Field label="Offered Total Comp"><input type="number" value={form.salaryMax} onChange={set('salaryMax')} /></Field>
-            </div>
-            <Field label="Offer Details & Negotiation"><textarea rows={4} value={form.notes} onChange={set('notes')} placeholder="Base: ₹X&#10;Equity: Y RSUs&#10;Signing: Z&#10;Deadline: [date]&#10;Counter #1: ..." /></Field>
-            {form.status === 'Offer' && <button type="button" className="w-full border-amber-200 text-amber-700 hover:bg-amber-50 py-2" onClick={() => advanceTo('Offer Negotiation')}>↔ Enter Negotiation</button>}
-          </div>}
-
-          {/* ═══ Collapsed: Other sections (click to expand) ═══ */}
-          {id !== 'new' && stage !== 'apply' && <Collapsible title="📋 Edit Application Info" open={showMore==='info'} toggle={()=>setShowMore(showMore==='info'?null:'info')}>
-            <div className="grid grid-cols-2 gap-3">
-              <Field label="Company"><input value={form.company} onChange={set('company')} /></Field>
-              <Field label="Role"><input value={form.role} onChange={set('role')} /></Field>
-            </div>
-            <Field label="Contact"><input value={form.contactName} onChange={set('contactName')} /></Field>
-            <Field label="Notes"><textarea rows={2} value={form.notes} onChange={set('notes')} /></Field>
-          </Collapsible>}
-
-          {/* Journey */}
-          {id !== 'new' && form.statusHistory.length > 0 && <Collapsible title="🗺️ Journey" open={showMore==='journey'} toggle={()=>setShowMore(showMore==='journey'?null:'journey')}>
-            {[...form.statusHistory].reverse().map((h, i) => (
-              <div key={i} className="flex items-center gap-2 py-1"><span className="w-2 h-2 rounded-full bg-accent" /><span className="font-medium">{h.toStatus}</span><span className="text-muted ml-auto text-sm">{format(new Date(h.timestamp), 'MMM d, HH:mm')}</span></div>
-            ))}
-          </Collapsible>}
-        </div>
-
-        {/* Footer */}
-        <div className="shrink-0 px-6 py-4 border-t border-border flex gap-2">
-          <button type="button" className="primary flex-1 py-2.5" onClick={save}>{id === 'new' ? '🚀 Create' : '💾 Save'}</button>
-          {id !== 'new' && <button type="button" onClick={() => exportApplicationPDF(id)} className="px-3">📄</button>}
-          {id !== 'new' && <button type="button" className="danger px-3" onClick={remove}>🗑</button>}
+        <div className="flex items-center gap-2">
+          {form.statusHistory.length > 1 && <button type="button" onClick={undo} title="Undo last status change" className="text-sm px-3 border-amber-200 text-amber-700 hover:bg-amber-50">↩ Undo</button>}
+          <button type="button" className="primary px-4" onClick={save}>{id === 'new' ? '🚀 Create' : '💾 Save'}</button>
+          {id !== 'new' && <button type="button" onClick={() => exportApplicationPDF(id)} className="px-2">📄</button>}
+          {id !== 'new' && <button type="button" className="danger px-2" onClick={remove}>🗑</button>}
+          <button onClick={onClose} className="ml-2 w-8 h-8 rounded-full bg-bg-secondary text-muted hover:bg-border border-0">✕</button>
         </div>
       </div>
-      <style>{`@keyframes fadeIn{from{opacity:0;transform:scale(0.97)}to{opacity:1;transform:scale(1)}}`}</style>
+
+      <div className="flex-1 flex overflow-hidden">
+        {/* Sidebar */}
+        <nav className="shrink-0 w-56 border-r border-border bg-bg-card p-4 space-y-1 overflow-y-auto">
+          {STEPS.map((step, i) => {
+            const stepIdx = i
+            const currentStepIdx = STEPS.findIndex(s => s.id === getStepForStatus(form.status))
+            const reached = stepIdx <= currentStepIdx
+            const isActive = activeStep === step.id
+            return (
+              <button key={step.id} type="button" onClick={() => setActiveStep(step.id)}
+                className={`w-full text-left px-3 py-2.5 rounded-lg border-0 transition-all ${isActive ? 'bg-accent/10 text-accent ring-1 ring-accent/30' : reached ? 'bg-bg-secondary hover:bg-accent/5' : 'bg-transparent text-muted hover:bg-bg-secondary'}`}>
+                <div className="flex items-center gap-2">
+                  <span className="text-lg">{step.icon}</span>
+                  <div>
+                    <p className={`text-sm font-semibold ${isActive ? 'text-accent' : reached ? '' : 'text-muted'}`}>{step.label}</p>
+                    <p className="text-[11px] text-muted">{step.desc}</p>
+                  </div>
+                </div>
+                {reached && stepIdx < currentStepIdx && <span className="text-[10px] text-green-600 font-medium ml-7">✓ Done</span>}
+              </button>
+            )
+          })}
+
+          {/* Status advance in sidebar */}
+          {id !== 'new' && <div className="pt-3 mt-3 border-t border-border space-y-1.5">
+            <p className="text-[11px] font-bold uppercase text-muted px-1">Move to</p>
+            {!isTerminal && currentIdx < stageOrder.length - 1 && <button type="button" className="w-full primary text-xs py-2 text-left px-3" onClick={() => advanceTo(stageOrder[currentIdx + 1])}>→ {stageOrder[currentIdx + 1]}</button>}
+            {!isTerminal && <button type="button" className="w-full text-xs py-1.5 text-left px-3 border-red-200 text-red-600 hover:bg-red-50" onClick={() => advanceTo('Rejected')}>✕ Rejected</button>}
+            {!isTerminal && currentIdx < 4 && <button type="button" className="w-full text-xs py-1.5 text-left px-3 border-orange-200 text-orange-600 hover:bg-orange-50" onClick={() => advanceTo('Ghosted')}>👻 Ghosted</button>}
+            {!isTerminal && currentIdx >= 4 && <button type="button" className="w-full text-xs py-1.5 text-left px-3 border-gray-200 text-gray-600 hover:bg-gray-50" onClick={() => advanceTo('Withdrawn')}>← Withdrawn</button>}
+          </div>}
+
+          {/* Journey */}
+          {id !== 'new' && form.statusHistory.length > 0 && <div className="pt-3 mt-3 border-t border-border">
+            <p className="text-[11px] font-bold uppercase text-muted px-1 mb-1">Journey</p>
+            {[...form.statusHistory].reverse().slice(0, 6).map((h, i) => (
+              <div key={i} className="flex items-center gap-1.5 py-0.5 px-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-accent shrink-0" />
+                <span className="text-[11px] truncate">{h.toStatus}</span>
+                <span className="text-[10px] text-muted ml-auto">{format(new Date(h.timestamp), 'MMM d')}</span>
+              </div>
+            ))}
+          </div>}
+        </nav>
+
+        {/* Main content */}
+        <main className="flex-1 overflow-y-auto p-6">
+          <div className="max-w-2xl mx-auto space-y-5">
+
+            {/* ═══ STEP: APPLY ═══ */}
+            {activeStep === 'apply' && <>
+              <StepHeader title="📨 Application Details" desc="Fill in the basics. Which company, what role, where you found it, and which resume you're sending." />
+              <div className="grid grid-cols-2 gap-4">
+                <Field label="Company *"><input required value={form.company} onChange={set('company')} placeholder="e.g. Google" /></Field>
+                <Field label="Role *"><input required value={form.role} onChange={set('role')} placeholder="e.g. Senior SDE" /></Field>
+              </div>
+              <div className="grid grid-cols-3 gap-4">
+                <Field label="Status"><select value={form.status} onChange={set('status')}>{STATUSES.map(s => <option key={s}>{s}</option>)}</select></Field>
+                <Field label="Source"><select value={form.source} onChange={set('source')}><option value="">—</option>{SOURCES.map(s => <option key={s}>{s}</option>)}</select></Field>
+                <Field label="Date Applied"><input type="date" value={form.dateApplied} onChange={set('dateApplied')} /></Field>
+              </div>
+              <Field label="JD Link"><input value={form.jdLink} onChange={set('jdLink')} placeholder="https://..." /></Field>
+              <Field label="JD Text (paste if no link)">
+                <textarea rows={4} value={form.jdText || ''} onChange={set('jdText')} placeholder="Paste the full job description here if you received it via email or don't have a direct link..." />
+              </Field>
+              <div className="grid grid-cols-2 gap-4">
+                <Field label="Contact Person"><input value={form.contactName} onChange={set('contactName')} placeholder="Recruiter / referral name" /></Field>
+                <Field label="Contact Email"><input value={form.contactEmail} onChange={set('contactEmail')} placeholder="recruiter@company.com" /></Field>
+              </div>
+              <Field label="Notes"><textarea rows={2} value={form.notes} onChange={set('notes')} placeholder="Why this role? Motivation, red flags, referral context..." /></Field>
+              <Field label="Tags">
+                <div className="flex gap-2"><input value={tagInput} onChange={e => setTagInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addTag())} placeholder="Type & press Enter (e.g. remote, FAANG)" className="flex-1" /><button type="button" onClick={addTag}>+</button></div>
+                {form.tags.length > 0 && <div className="flex gap-1.5 flex-wrap mt-2">{form.tags.map(t => <span key={t} className="px-2 py-0.5 rounded-full bg-accent/10 text-accent text-xs cursor-pointer hover:bg-red-100 hover:text-red-600" onClick={() => setForm(f => ({ ...f, tags: f.tags.filter(x => x !== t) }))}>{t} ✕</span>)}</div>}
+              </Field>
+
+              {/* Resume */}
+              <div className="rounded-lg bg-bg-secondary p-4 space-y-2">
+                <p className="font-semibold">📄 Resume — which version are you sending?</p>
+                {linkedResumes.map(r => <div key={r.id} className="flex items-center gap-2 bg-bg-card rounded-md p-2"><span className={`text-xs px-1.5 py-0.5 rounded font-bold ${r.category==='Tailored'?'bg-purple-50 text-purple-700':'bg-sky-50 text-sky-700'}`}>{r.category==='Tailored'?'🎯 Tailored':'📋 General'}</span><span className="flex-1">{r.name}</span>{id!=='new'&&<button type="button" onClick={()=>toggleResume(r.id)} className="text-xs text-danger border-0 bg-transparent">Unlink</button>}</div>)}
+                {id!=='new'&&availableResumes.length>0&&<div className="flex flex-wrap gap-1.5">{availableResumes.map(r=><button key={r.id} type="button" onClick={()=>toggleResume(r.id)} className="text-xs px-2 py-1 rounded-md bg-bg-card border border-border hover:border-accent hover:text-accent">+ {r.name}</button>)}</div>}
+                <div className="flex gap-2 items-center"><input placeholder="Upload new (e.g. TPM-v3-AWS)" value={resumeName} onChange={e=>setResumeName(e.target.value)} className="flex-1" /><select value={resumeCategory} onChange={e=>setResumeCategory(e.target.value)} className="w-24"><option>General</option><option>Tailored</option></select><button type="button" onClick={()=>fileRef.current?.click()} className="px-2">{resumeFile?'📎 '+resumeFile.name.slice(0,12):'📁 File'}</button><input ref={fileRef} type="file" accept=".pdf,.docx" className="hidden" onChange={e=>setResumeFile(e.target.files[0])} />{resumeFile&&resumeName&&<button type="button" className="primary px-3" onClick={uploadResume}>Upload</button>}</div>
+              </div>
+            </>}
+
+            {/* ═══ STEP: SCREENING ═══ */}
+            {activeStep === 'screen' && <>
+              <StepHeader title="📞 Recruiter Screen" desc="Research salary BEFORE the call. Add the screen as Round 1 below. Fill retro after." />
+
+              <div className="rounded-lg bg-green-50 border border-green-200 p-4 space-y-3">
+                <p className="font-semibold text-green-800">💰 Salary Research — do this before they ask</p>
+                <div className="flex gap-2">
+                  {form.company&&form.role&&<><a href={getGlassdoorUrl(form.company,form.role)} target="_blank" rel="noopener" className="flex-1 text-center py-2 rounded-md bg-white text-green-700 border border-green-300 font-semibold no-underline hover:bg-green-100">Glassdoor</a><a href={getLevelsFyiUrl(form.company,form.role)} target="_blank" rel="noopener" className="flex-1 text-center py-2 rounded-md bg-white text-blue-700 border border-blue-300 font-semibold no-underline hover:bg-blue-100">Levels.fyi</a><a href={`https://www.ambitionbox.com/salaries/${encodeURIComponent(form.company.toLowerCase().replace(/\s+/g,'-'))}-salaries`} target="_blank" rel="noopener" className="flex-1 text-center py-2 rounded-md bg-white text-orange-700 border border-orange-300 font-semibold no-underline hover:bg-orange-100">AmbitionBox</a></>}
+                </div>
+                <Field label="Research Notes (range + source link)"><textarea rows={2} value={form.salaryResearch||''} onChange={set('salaryResearch')} placeholder="₹28-40 LPA (Glassdoor, 85 reports)&#10;$150-180K TC for L5 (Levels.fyi)" /></Field>
+                <div className="grid grid-cols-2 gap-3">
+                  <Field label="Your Floor (min)"><input type="number" value={form.salaryMin} onChange={set('salaryMin')} placeholder="e.g. 2800000" /></Field>
+                  <Field label="Your Target"><input type="number" value={form.salaryMax} onChange={set('salaryMax')} placeholder="e.g. 4000000" /></Field>
+                </div>
+              </div>
+
+              <p className="font-semibold mt-4">📞 Screen Round</p>
+              <p className="text-sm text-muted">Add the recruiter call as Round 1. After the call, expand it and fill the retro.</p>
+              <RoundsUI rounds={rounds} expandedRound={expandedRound} setExpandedRound={setExpandedRound} roundForm={roundForm} setRoundForm={setRoundForm} saveRound={saveRound} updateRound={updateRound} deleteRound={deleteRound} defaultType="Recruiter Screen" />
+            </>}
+
+            {/* ═══ STEP: INTERVIEW ═══ */}
+            {activeStep === 'interview' && <>
+              <StepHeader title="🎯 Interview Loop" desc="General prep once. Then for each round: prep before → interview → retro after. Review last retro before next prep." />
+
+              <div className="rounded-lg bg-indigo-50 border border-indigo-200 p-4">
+                <p className="font-semibold text-indigo-800 mb-2">📚 General Prep — applies to all rounds</p>
+                <textarea rows={5} value={form.generalPrep||''} onChange={set('generalPrep')} placeholder="• Company: what they do, culture, recent news&#10;• Your 30-sec pitch for this role&#10;• 3-4 STAR stories (pick from story bank)&#10;• Key projects to highlight&#10;• Questions to ask them" className="bg-white" />
+              </div>
+
+              <p className="font-semibold mt-2">Rounds</p>
+              <RoundsUI rounds={rounds} expandedRound={expandedRound} setExpandedRound={setExpandedRound} roundForm={roundForm} setRoundForm={setRoundForm} saveRound={saveRound} updateRound={updateRound} deleteRound={deleteRound} defaultType="Technical" />
+            </>}
+
+            {/* ═══ STEP: OFFER ═══ */}
+            {activeStep === 'offer' && <>
+              <StepHeader title="🎉 Offer & Negotiation" desc="Log the offer, track negotiation rounds, make your decision." />
+              <div className="grid grid-cols-2 gap-4">
+                <Field label="Offered Base / Min"><input type="number" value={form.salaryMin} onChange={set('salaryMin')} /></Field>
+                <Field label="Total Comp"><input type="number" value={form.salaryMax} onChange={set('salaryMax')} /></Field>
+              </div>
+              <Field label="Offer Details & Negotiation Log"><textarea rows={5} value={form.notes} onChange={set('notes')} placeholder="Base: ₹X LPA&#10;Equity: Y RSUs over 4 years&#10;Signing: Z&#10;Deadline: [date]&#10;&#10;Counter #1: Asked for X, they came back with Y&#10;Counter #2: ..." /></Field>
+            </>}
+          </div>
+        </main>
+      </div>
     </div>
   )
 }
 
-function SectionHead({ title, subtitle }) {
-  return <div><p className="font-bold">{title}</p>{subtitle && <p className="text-sm text-muted">{subtitle}</p>}</div>
+function StepHeader({ title, desc }) {
+  return <div className="mb-2"><h2 className="text-lg font-bold">{title}</h2><p className="text-sm text-muted">{desc}</p></div>
 }
 
-function Field({ label, required, children }) {
-  return <div><label>{label}{required && <span className="text-red-500 ml-0.5">*</span>}</label>{children}</div>
+function Field({ label, children }) {
+  return <div><label>{label}</label>{children}</div>
 }
 
-function Collapsible({ title, open, toggle, children }) {
-  return <div className="border border-border rounded-lg overflow-hidden">
-    <button type="button" onClick={toggle} className="w-full flex items-center justify-between px-4 py-2.5 bg-bg-secondary/50 border-0 hover:bg-bg-secondary text-left">
-      <span className="font-medium text-sm">{title}</span><span className="text-muted">{open ? '▲' : '▼'}</span>
-    </button>
-    {open && <div className="px-4 py-3 space-y-3 border-t border-border">{children}</div>}
-  </div>
-}
-
-function RoundsView({ rounds, expandedRound, setExpandedRound, roundForm, setRoundForm, saveRound, updateRound, deleteRound, defaultType }) {
+function RoundsUI({ rounds, expandedRound, setExpandedRound, roundForm, setRoundForm, saveRound, updateRound, deleteRound, defaultType }) {
   return <div className="space-y-2">
     {rounds.map((r, i) => (
       <div key={r.id} className="rounded-lg border border-border overflow-hidden">
-        <div className="flex items-center gap-2 p-3 cursor-pointer hover:bg-bg-secondary/30" onClick={() => setExpandedRound(expandedRound === r.id ? null : r.id)}>
-          <div className="w-7 h-7 rounded-full bg-violet-600 text-white font-bold flex items-center justify-center shrink-0">{i+1}</div>
+        <div className="flex items-center gap-3 p-3 cursor-pointer hover:bg-bg-secondary/30" onClick={() => setExpandedRound(expandedRound === r.id ? null : r.id)}>
+          <div className="w-8 h-8 rounded-full bg-violet-600 text-white font-bold flex items-center justify-center shrink-0">{i+1}</div>
           <div className="flex-1">
             <p className="font-medium">{r.type}<span className="text-muted font-normal">{r.medium ? ` · ${r.medium}` : ''}</span></p>
             <p className="text-sm text-muted">{r.date ? format(new Date(r.date), 'EEE, MMM d') : 'TBD'}{r.time ? ` at ${r.time}` : ''}{r.interviewer ? ` · ${r.interviewer}` : ''}</p>
           </div>
-          <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${r.result==='Passed'?'bg-green-50 text-green-700':r.result==='Failed'?'bg-red-50 text-red-700':'bg-amber-50 text-amber-700'}`}>{r.result||'Pending'}</span>
-          <span className="text-muted">{expandedRound===r.id?'▲':'▼'}</span>
+          <span className={`text-xs font-bold px-2 py-1 rounded-full ${r.result==='Passed'?'bg-green-50 text-green-700':r.result==='Failed'?'bg-red-50 text-red-700':'bg-amber-50 text-amber-700'}`}>{r.result||'Pending'}</span>
+          <span className="text-muted text-lg">{expandedRound===r.id?'▲':'▼'}</span>
         </div>
-        {expandedRound === r.id && <div className="border-t border-border space-y-0">
-          <div className="p-3 space-y-3">
-            <div className="grid grid-cols-3 gap-2">
+        {expandedRound === r.id && <div className="border-t border-border">
+          <div className="p-4 space-y-3">
+            <div className="grid grid-cols-3 gap-3">
               <Field label="Date"><input type="date" value={r.date||''} onChange={e=>updateRound(r,{date:e.target.value})} /></Field>
               <Field label="Time"><input type="time" value={r.time||''} onChange={e=>updateRound(r,{time:e.target.value})} /></Field>
               <Field label="Medium"><select value={r.medium||''} onChange={e=>updateRound(r,{medium:e.target.value})}><option value="">—</option>{INTERVIEW_MEDIUMS.map(m=><option key={m}>{m}</option>)}</select></Field>
             </div>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-2 gap-3">
               <Field label="Interviewer"><input value={r.interviewer||''} onChange={e=>updateRound(r,{interviewer:e.target.value})} placeholder="Name (Role)" /></Field>
               <Field label="Result"><select value={r.result||'Pending'} onChange={e=>updateRound(r,{result:e.target.value})}><option>Pending</option><option>Passed</option><option>Failed</option></select></Field>
             </div>
           </div>
-          <div className="p-3 border-t border-border bg-indigo-50/40">
-            <p className="font-semibold text-sm text-indigo-700 mb-1">📚 Prep <span className="font-normal text-indigo-500">— write BEFORE the round</span></p>
-            <textarea rows={2} value={r.prep||''} onChange={e=>updateRound(r,{prep:e.target.value})} placeholder="What to study, stories to have ready..." className="bg-white" />
+          <div className="p-4 border-t border-border bg-indigo-50/50">
+            <p className="font-semibold text-indigo-700 mb-1">📚 Prep — write BEFORE this round</p>
+            <p className="text-xs text-indigo-600 mb-2">What topics will this round cover? Which stories should you have ready?</p>
+            <textarea rows={3} value={r.prep||''} onChange={e=>updateRound(r,{prep:e.target.value})} placeholder="Topics to review, stories to prepare, technical concepts..." className="bg-white" />
           </div>
-          <div className="p-3 border-t border-border bg-emerald-50/40">
-            <p className="font-semibold text-sm text-emerald-700 mb-1">📝 Retro <span className="font-normal text-emerald-500">— write IMMEDIATELY after</span></p>
-            <textarea rows={2} value={r.retro||''} onChange={e=>updateRound(r,{retro:e.target.value})} placeholder="What went well, what I fumbled, confidence..." className="bg-white" />
+          <div className="p-4 border-t border-border bg-emerald-50/50">
+            <p className="font-semibold text-emerald-700 mb-1">📝 Retro — write IMMEDIATELY after</p>
+            <p className="text-xs text-emerald-600 mb-2">While it's fresh: what went well, what you fumbled, questions you couldn't answer cleanly.</p>
+            <textarea rows={3} value={r.retro||''} onChange={e=>updateRound(r,{retro:e.target.value})} placeholder="✓ Went well:&#10;✗ Fumbled:&#10;? Couldn't answer:&#10;Confidence: /5" className="bg-white" />
           </div>
-          <div className="p-2 border-t border-border flex justify-end"><button type="button" onClick={()=>deleteRound(r.id)} className="text-xs text-danger border-danger/30 hover:bg-red-50">🗑 Delete</button></div>
+          <div className="p-3 border-t border-border flex justify-end"><button type="button" onClick={()=>deleteRound(r.id)} className="text-sm text-danger border-danger/30 hover:bg-red-50">🗑 Delete Round</button></div>
         </div>}
       </div>
     ))}
@@ -249,8 +291,8 @@ function RoundsView({ rounds, expandedRound, setExpandedRound, roundForm, setRou
         <Field label="Date"><input type="date" value={roundForm.date} onChange={e=>setRoundForm(f=>({...f,date:e.target.value}))} /></Field>
         <Field label="Time"><input type="time" value={roundForm.time} onChange={e=>setRoundForm(f=>({...f,time:e.target.value}))} /></Field>
       </div>
-      <Field label="Interviewer"><input value={roundForm.interviewer} onChange={e=>setRoundForm(f=>({...f,interviewer:e.target.value}))} /></Field>
-      <div className="flex gap-2"><button type="button" className="primary flex-1" onClick={saveRound}>Add</button><button type="button" onClick={()=>setRoundForm(null)}>Cancel</button></div>
-    </div> : <button type="button" onClick={()=>setRoundForm({type:defaultType,date:new Date().toISOString().slice(0,10),time:'10:00',medium:'Microsoft Teams',interviewer:'',result:'Pending'})} className="w-full border-2 border-dashed border-border text-muted py-3 hover:border-accent hover:text-accent rounded-lg">+ Add Round</button>}
+      <Field label="Interviewer"><input value={roundForm.interviewer} onChange={e=>setRoundForm(f=>({...f,interviewer:e.target.value}))} placeholder="Name (Role)" /></Field>
+      <div className="flex gap-2"><button type="button" className="primary flex-1" onClick={saveRound}>Add Round</button><button type="button" onClick={()=>setRoundForm(null)}>Cancel</button></div>
+    </div> : <button type="button" onClick={()=>setRoundForm({type:defaultType,date:new Date().toISOString().slice(0,10),time:'10:00',medium:'Microsoft Teams',interviewer:'',result:'Pending'})} className="w-full border-2 border-dashed border-border text-muted py-4 hover:border-accent hover:text-accent rounded-lg text-sm">+ Add Interview Round</button>}
   </div>
 }

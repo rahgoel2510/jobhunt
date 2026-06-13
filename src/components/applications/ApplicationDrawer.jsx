@@ -187,33 +187,35 @@ export default function ApplicationDrawer({ id, onClose, onSaved }) {
               </Field>
 
               {/* Resume */}
-              <div className="rounded-lg bg-bg-secondary p-4 space-y-2">
-                <div className="flex items-center justify-between">
-                  <p className="font-semibold">📄 Resume</p>
-                  {linkedResumes.length > 0
-                    ? <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-green-50 text-green-700 border border-green-200">✓ {linkedResumes.length} attached</span>
-                    : <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">⚠ No resume linked</span>
-                  }
-                </div>
-                {linkedResumes.length === 0 && <p className="text-xs text-muted italic">Upload or link a resume so you know which version you sent to this company.</p>}
-                {linkedResumes.map(r => <div key={r.id} className="flex items-center gap-2 bg-bg-card rounded-md p-2 border border-green-200"><span className="text-green-600">✓</span><span className={`text-xs px-1.5 py-0.5 rounded font-bold ${r.category==='Tailored'?'bg-purple-50 text-purple-700':'bg-sky-50 text-sky-700'}`}>{r.category==='Tailored'?'🎯 Tailored':'📋 General'}</span><span className="flex-1">{r.name}</span>{id!=='new'&&<button type="button" onClick={()=>toggleResume(r.id)} className="text-xs text-danger border-0 bg-transparent">Unlink</button>}</div>)}
-                {id!=='new'&&availableResumes.length>0&&<div><p className="text-xs text-muted mb-1">Or link an existing resume:</p><div className="flex flex-wrap gap-1.5">{availableResumes.map(r=><button key={r.id} type="button" onClick={()=>toggleResume(r.id)} className="text-xs px-2 py-1 rounded-md bg-bg-card border border-border hover:border-accent hover:text-accent">+ {r.name}</button>)}</div></div>}
-                <div className="border-t border-border pt-2 mt-2">
-                  <p className="text-xs text-muted mb-1.5">Upload new resume (auto-links to this application):</p>
-                  <div className="flex flex-col sm:flex-row gap-2">
-                    <input placeholder="Name (e.g. TPM-v3-AWS)" value={resumeName} onChange={e=>setResumeName(e.target.value)} className="flex-1" />
-                    <select value={resumeCategory} onChange={e=>setResumeCategory(e.target.value)} className="sm:w-24"><option>General</option><option>Tailored</option></select>
-                  </div>
-                  <div className="flex items-center gap-2 mt-2">
-                    <button type="button" onClick={()=>fileRef.current?.click()} className="flex-1 border-dashed text-left">{resumeFile ? `📎 ${resumeFile.name}` : '📁 Choose PDF or DOCX file'}</button>
-                    <input ref={fileRef} type="file" accept=".pdf,.docx" className="hidden" onChange={e=>setResumeFile(e.target.files[0])} />
-                  </div>
-                  <button type="button" className={`w-full mt-2 ${resumeFile && resumeName ? 'primary' : 'opacity-50 cursor-not-allowed bg-bg-secondary border-border text-muted'}`} onClick={uploadResume} disabled={!resumeFile || !resumeName}>
-                    {!resumeFile && !resumeName ? '↑ Pick a file and give it a name to upload' : !resumeName ? '↑ Enter a name for this resume' : !resumeFile ? '↑ Choose a file to upload' : `↑ Upload "${resumeName}"`}
-                  </button>
-                </div>
-              </div>
             </>}
+
+            {/* ═══ RESUME — always visible for existing apps ═══ */}
+            {id !== 'new' && <div className="rounded-lg bg-bg-secondary p-4 space-y-2">
+              <div className="flex items-center justify-between">
+                <p className="font-semibold">📄 Resume</p>
+                {linkedResumes.length > 0
+                  ? <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-green-50 text-green-700 border border-green-200">✓ {linkedResumes.length} attached</span>
+                  : <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">⚠ No resume linked</span>
+                }
+              </div>
+              {linkedResumes.length === 0 && <p className="text-xs text-muted italic">Upload or link a resume so you know which version you sent.</p>}
+              {linkedResumes.map(r => <div key={r.id} className="flex items-center gap-2 bg-bg-card rounded-md p-2 border border-green-200"><span className="text-green-600">✓</span><span className={`text-xs px-1.5 py-0.5 rounded font-bold ${r.category==='Tailored'?'bg-purple-50 text-purple-700':'bg-sky-50 text-sky-700'}`}>{r.category==='Tailored'?'🎯 Tailored':'📋 General'}</span><span className="flex-1">{r.name}</span><button type="button" onClick={()=>toggleResume(r.id)} className="text-xs text-danger border-0 bg-transparent">Unlink</button></div>)}
+              {availableResumes.length>0&&<div><p className="text-xs text-muted mb-1">Link existing:</p><div className="flex flex-wrap gap-1.5">{availableResumes.map(r=><button key={r.id} type="button" onClick={()=>toggleResume(r.id)} className="text-xs px-2 py-1 rounded-md bg-bg-card border border-border hover:border-accent hover:text-accent">+ {r.name}</button>)}</div></div>}
+              <div className="border-t border-border pt-2 mt-2">
+                <p className="text-xs text-muted mb-1.5">Upload new:</p>
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <input placeholder="Name (e.g. TPM-v3-AWS)" value={resumeName} onChange={e=>setResumeName(e.target.value)} className="flex-1" />
+                  <select value={resumeCategory} onChange={e=>setResumeCategory(e.target.value)} className="sm:w-24"><option>General</option><option>Tailored</option></select>
+                </div>
+                <div className="flex items-center gap-2 mt-2">
+                  <button type="button" onClick={()=>fileRef.current?.click()} className="flex-1 border-dashed text-left">{resumeFile ? `📎 ${resumeFile.name}` : '📁 Choose PDF or DOCX file'}</button>
+                  <input ref={fileRef} type="file" accept=".pdf,.docx" className="hidden" onChange={e=>setResumeFile(e.target.files[0])} />
+                </div>
+                <button type="button" className={`w-full mt-2 ${resumeFile && resumeName ? 'primary' : 'opacity-50 cursor-not-allowed bg-bg-secondary border-border text-muted'}`} onClick={uploadResume} disabled={!resumeFile || !resumeName}>
+                  {!resumeFile && !resumeName ? '↑ Pick a file and give it a name' : !resumeName ? '↑ Enter a name for this resume' : !resumeFile ? '↑ Choose a file' : `↑ Upload "${resumeName}"`}
+                </button>
+              </div>
+            </div>}
 
             {/* ═══ STEP: SCREENING ═══ */}
             {activeStep === 'screen' && <>

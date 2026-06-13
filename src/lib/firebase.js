@@ -2,12 +2,12 @@ import { initializeApp } from 'firebase/app'
 import { getFirestore } from 'firebase/firestore'
 
 const firebaseConfig = {
-  apiKey: "AIzaSyCB3pL0d_z-xDi2LPjlj7jLKpOXbHyG-a4",
-  authDomain: "jobhaunt-tracker.firebaseapp.com",
-  projectId: "jobhaunt-tracker",
-  storageBucket: "jobhaunt-tracker.firebasestorage.app",
-  messagingSenderId: "146892256588",
-  appId: "1:146892256588:web:85c6b0795174d18068cbe9"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID
 }
 
 const app = initializeApp(firebaseConfig)

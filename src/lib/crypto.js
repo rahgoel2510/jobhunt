@@ -3,11 +3,17 @@ const SALT_LENGTH = 16
 const IV_LENGTH = 12
 
 function toBase64(buf) {
-  return btoa(String.fromCharCode(...new Uint8Array(buf)))
+  const bytes = new Uint8Array(buf)
+  let binary = ''
+  for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i])
+  return btoa(binary)
 }
 
 function fromBase64(str) {
-  return Uint8Array.from(atob(str), c => c.charCodeAt(0))
+  const binary = atob(str)
+  const bytes = new Uint8Array(binary.length)
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i)
+  return bytes
 }
 
 async function deriveKey(passphrase, salt) {
